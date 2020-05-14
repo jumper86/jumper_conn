@@ -1,4 +1,4 @@
-package impl
+package conn
 
 import (
 	"encoding/binary"

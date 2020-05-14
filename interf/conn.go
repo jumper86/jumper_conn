@@ -4,7 +4,7 @@ import (
 	"net"
 )
 
-type JConn interface {
+type Conn interface {
 	GetConn() net.Conn
 	Close()
 	IsClosed() bool
@@ -12,18 +12,3 @@ type JConn interface {
 	Write(data []byte) error
 	AsyncWrite(data []byte) error
 }
-
-type Handler interface {
-	OnMessage(data []byte) error
-	OnClose(err error)
-}
-
-//
-//type Packet struct{
-//
-//}
-//
-//type Protocol interface {
-//	Marshale()
-//	UnMarshale(reader io.Reader, buffer []byte) error
-//}

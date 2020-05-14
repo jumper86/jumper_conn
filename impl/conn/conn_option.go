@@ -1,14 +1,12 @@
-package impl
+package conn
 
 import (
 	"github.com/jumper86/jumper_conn/cst"
 	"github.com/jumper86/jumper_conn/interf"
 )
 
-type Side int8
-
 const (
-	ServerSide Side = iota
+	ServerSide int8 = iota
 	ClientSide
 )
 

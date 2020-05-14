@@ -1,4 +1,4 @@
-package impl
+package conn
 
 import (
 	"net"
@@ -69,7 +69,7 @@ func (this *WsConn) run() {
 	}
 
 	this.setReadLimit()
-	if Side(this.side) == ServerSide {
+	if this.side == ServerSide {
 		this.sendPing()
 		this.handlePong()
 	}
