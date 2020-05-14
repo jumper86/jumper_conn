@@ -2,6 +2,7 @@ package impl
 
 import (
 	"net"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -20,7 +21,7 @@ type WsConn struct {
 	handler interf.Handler
 }
 
-func NewWsConn(conn *websocket.Conn, co connOptions, handler interf.Handler) (interf.JConn, error) {
+func NewWsConn(conn *websocket.Conn, co *connOptions, handler interf.Handler) (interf.JConn, error) {
 	err := checkOp(co, handler)
 	if err != nil {
 		return nil, err
@@ -30,17 +31,53 @@ func NewWsConn(conn *websocket.Conn, co connOptions, handler interf.Handler) (in
 		closed:      0,
 		writeBuffer: make(chan []byte, co.asyncWriteSize),
 		closeChan:   make(chan struct{}),
-		connOptions: co,
+		connOptions: *co,
 		handler:     handler,
 	}
+
+	rc.run()
 	return rc, nil
 }
 
-func (this *WsConn) Run() {
+//服务端和客户端都需要
+func (this *WsConn) setReadLimit() {
+	this.conn.SetReadLimit(this.maxMsgSize)
+}
 
-	go this.read()
-	go this.asyncWrite()
+//服务端发送ping, 接收pong
+func (this *WsConn) sendPing() {
+	ticker := time.NewTicker(time.Duration(this.pingPeriod))
+	for _ = range ticker.C {
+		this.conn.WriteControl(websocket.PingMessage, nil,
+			time.Now().Add(time.Duration(this.writeTimeout)*time.Second))
+	}
 
+}
+
+func (this *WsConn) handlePong() {
+	this.conn.SetPongHandler(func(appData string) error {
+		return this.conn.SetReadDeadline(time.Now().Add(time.Duration(this.pongWait) * time.Second))
+	})
+}
+
+//客户端接收ping, 发送pong, 默认底层处理已经使用回复了pong
+
+func (this *WsConn) run() {
+
+	if this.IsClosed() {
+		return
+	}
+
+	this.setReadLimit()
+	if Side(this.side) == ServerSide {
+		this.sendPing()
+		this.handlePong()
+	}
+
+	wg := sync.WaitGroup{}
+	go this.read(wg)
+	go this.asyncWrite(wg)
+	wg.Done()
 }
 
 func (this *WsConn) GetConn() net.Conn {
@@ -52,8 +89,7 @@ func (this *WsConn) Close() {
 	this.close(nil)
 }
 func (this *WsConn) IsClosed() bool {
-	closed := atomic.LoadInt32(&this.closed)
-	return closed == 1
+	return atomic.LoadInt32(&this.closed) == 1
 }
 
 func (this *WsConn) close(err error) {
@@ -116,7 +152,9 @@ func (this *WsConn) AsyncWrite(data []byte) (err error) {
 	return nil
 }
 
-func (this *WsConn) asyncWrite() error {
+func (this *WsConn) asyncWrite(wg sync.WaitGroup) error {
+
+	wg.Done()
 
 	var err error
 readLoop:
@@ -152,7 +190,9 @@ readLoop:
 	return err
 }
 
-func (this *WsConn) read() error {
+func (this *WsConn) read(wg sync.WaitGroup) error {
+
+	wg.Done()
 
 	var err error
 

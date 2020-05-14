@@ -9,8 +9,6 @@ type JConn interface {
 	Close()
 	IsClosed() bool
 
-	Run()
-
 	Write(data []byte) error
 	AsyncWrite(data []byte) error
 }

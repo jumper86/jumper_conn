@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"io"
 	"net"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -21,7 +22,7 @@ type RawConn struct {
 	handler interf.Handler
 }
 
-func NewRawConn(conn net.Conn, co connOptions, handler interf.Handler) (interf.JConn, error) {
+func NewRawConn(conn net.Conn, co *connOptions, handler interf.Handler) (interf.JConn, error) {
 	err := checkOp(co, handler)
 	if err != nil {
 		return nil, err
@@ -31,17 +32,22 @@ func NewRawConn(conn net.Conn, co connOptions, handler interf.Handler) (interf.J
 		closed:      0,
 		writeBuffer: make(chan []byte, co.asyncWriteSize),
 		closeChan:   make(chan struct{}),
-		connOptions: co,
+		connOptions: *co,
 		handler:     handler,
 	}
+
+	rc.run()
 	return rc, nil
 }
 
-func (this *RawConn) Run() {
-
-	go this.read()
-	go this.asyncWrite()
-
+func (this *RawConn) run() {
+	if this.IsClosed() {
+		return
+	}
+	wg := sync.WaitGroup{}
+	go this.read(wg)
+	go this.asyncWrite(wg)
+	wg.Wait()
 }
 
 func (this *RawConn) GetConn() net.Conn {
@@ -67,12 +73,12 @@ func (this *RawConn) Close() {
 }
 
 func (this *RawConn) IsClosed() bool {
-	closed := atomic.LoadInt32(&this.closed)
-	return closed == 1
+	return atomic.LoadInt32(&this.closed) == 1
 }
 
-func (this *RawConn) read() {
+func (this *RawConn) read(wg sync.WaitGroup) {
 
+	wg.Done()
 	var err error
 readLoop:
 	for {
@@ -170,7 +176,9 @@ func (this *RawConn) AsyncWrite(data []byte) (err error) {
 	return nil
 }
 
-func (this *RawConn) asyncWrite() error {
+func (this *RawConn) asyncWrite(wg sync.WaitGroup) error {
+
+	wg.Done()
 
 	var l int
 	var err error
