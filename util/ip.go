@@ -35,7 +35,7 @@ func GetInternalIp() (string, error) {
 			}
 		}
 	}
-
+	//
 	return "", nil
 }
 
