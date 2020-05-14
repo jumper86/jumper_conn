@@ -44,6 +44,7 @@ func NewWsConn(conn *websocket.Conn, co *connOptions, handler interf.Handler) (i
 func (this *WsConn) LocalAddr() net.Addr {
 	return this.conn.LocalAddr()
 }
+
 func (this *WsConn) RemoteAddr() net.Addr {
 	return this.conn.RemoteAddr()
 }
