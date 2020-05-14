@@ -11,4 +11,11 @@ type Conn interface {
 
 	Write(data []byte) error
 	AsyncWrite(data []byte) error
+
+	LocalAddr() net.Addr
+	RemoteAddr() net.Addr
+
+	Set(string, interface{})
+	Get(string) interface{}
+	Del(string)
 }

@@ -14,15 +14,17 @@ import (
 )
 
 type RawConn struct {
+	connOptions
 	conn        net.Conn
 	closed      int32
 	writeBuffer chan []byte
 	closeChan   chan struct{}
-	connOptions
+
+	ctx     map[string]interface{}
 	handler interf.Handler
 }
 
-func NewRawConn(conn net.Conn, co *connOptions, handler interf.Handler) (interf.JConn, error) {
+func NewRawConn(conn net.Conn, co *connOptions, handler interf.Handler) (interf.Conn, error) {
 	err := checkOp(co, handler)
 	if err != nil {
 		return nil, err
@@ -40,32 +42,15 @@ func NewRawConn(conn net.Conn, co *connOptions, handler interf.Handler) (interf.
 	return rc, nil
 }
 
-func (this *RawConn) run() {
-	if this.IsClosed() {
-		return
-	}
-	wg := sync.WaitGroup{}
-	go this.read(wg)
-	go this.asyncWrite(wg)
-	wg.Wait()
+func (this *RawConn) LocalAddr() net.Addr {
+	return this.conn.LocalAddr()
+}
+func (this *RawConn) RemoteAddr() net.Addr {
+	return this.conn.RemoteAddr()
 }
 
 func (this *RawConn) GetConn() net.Conn {
 	return this.conn
-}
-
-func (this *RawConn) close(err error) {
-	swapped := atomic.CompareAndSwapInt32(&this.closed, 0, 1)
-	if !swapped {
-		return
-	}
-	//todo: clean resource
-	close(this.closeChan)
-	close(this.writeBuffer)
-
-	this.conn.Close()
-
-	this.handler.OnClose(err)
 }
 
 func (this *RawConn) Close() {
@@ -74,59 +59,6 @@ func (this *RawConn) Close() {
 
 func (this *RawConn) IsClosed() bool {
 	return atomic.LoadInt32(&this.closed) == 1
-}
-
-func (this *RawConn) read(wg sync.WaitGroup) {
-
-	wg.Done()
-	var err error
-readLoop:
-	for {
-		select {
-		case <-this.closeChan:
-			err = cst.ErrConnClosed
-			break readLoop
-		default:
-
-			this.setReadDeadline(this.readTimeout)
-
-			length := make([]byte, 4)
-			_, err = io.ReadFull(this.conn, length)
-			if err != nil {
-				break readLoop
-			}
-			left := binary.BigEndian.Uint32(length)
-
-			content := make([]byte, left)
-			_, err = io.ReadFull(this.conn, content)
-			if err != nil {
-				break readLoop
-			}
-
-			//process msg 可能会花较长时间，导致读超时断开
-			this.setReadDeadline(0)
-
-			err = this.handler.OnMessage(content)
-			if err != nil {
-				break readLoop
-			}
-		}
-	}
-
-	this.close(err)
-	return
-}
-
-func (this *RawConn) setWriteDeadline(timeout int64) {
-	if this.writeTimeout > 0 {
-		this.conn.SetWriteDeadline(time.Now().Add(time.Duration(timeout) * time.Second))
-	}
-}
-
-func (this *RawConn) setReadDeadline(timeout int64) {
-	if this.readTimeout > 0 {
-		this.conn.SetReadDeadline(time.Now().Add(time.Duration(timeout) * time.Second))
-	}
 }
 
 func (this *RawConn) Write(data []byte) error {
@@ -176,6 +108,49 @@ func (this *RawConn) AsyncWrite(data []byte) (err error) {
 	return nil
 }
 
+func (this *RawConn) Set(key string, value interface{}) {
+	this.ctx[key] = value
+}
+
+func (this *RawConn) Get(key string) interface{} {
+	if value, ok := this.ctx[key]; ok {
+		return value
+	}
+	return nil
+}
+
+func (this *RawConn) Del(key string) {
+	delete(this.ctx, key)
+}
+
+////////////////////////////////////////////////////////////// impl
+
+func (this *RawConn) setWriteDeadline(timeout int64) {
+	if this.writeTimeout > 0 {
+		this.conn.SetWriteDeadline(time.Now().Add(time.Duration(timeout) * time.Second))
+	}
+}
+
+func (this *RawConn) setReadDeadline(timeout int64) {
+	if this.readTimeout > 0 {
+		this.conn.SetReadDeadline(time.Now().Add(time.Duration(timeout) * time.Second))
+	}
+}
+
+func (this *RawConn) close(err error) {
+	swapped := atomic.CompareAndSwapInt32(&this.closed, 0, 1)
+	if !swapped {
+		return
+	}
+	//todo: clean resource
+	close(this.closeChan)
+	close(this.writeBuffer)
+
+	this.conn.Close()
+
+	this.handler.OnClose(err)
+}
+
 func (this *RawConn) asyncWrite(wg sync.WaitGroup) error {
 
 	wg.Done()
@@ -218,4 +193,55 @@ writeLoop:
 
 	this.close(err)
 	return err
+}
+
+func (this *RawConn) read(wg sync.WaitGroup) {
+
+	wg.Done()
+	var err error
+readLoop:
+	for {
+		select {
+		case <-this.closeChan:
+			err = cst.ErrConnClosed
+			break readLoop
+		default:
+
+			this.setReadDeadline(this.readTimeout)
+
+			length := make([]byte, 4)
+			_, err = io.ReadFull(this.conn, length)
+			if err != nil {
+				break readLoop
+			}
+			left := binary.BigEndian.Uint32(length)
+
+			content := make([]byte, left)
+			_, err = io.ReadFull(this.conn, content)
+			if err != nil {
+				break readLoop
+			}
+
+			//process msg 可能会花较长时间，导致读超时断开
+			this.setReadDeadline(0)
+
+			err = this.handler.OnMessage(content)
+			if err != nil {
+				break readLoop
+			}
+		}
+	}
+
+	this.close(err)
+	return
+}
+
+func (this *RawConn) run() {
+	if this.IsClosed() {
+		return
+	}
+	wg := sync.WaitGroup{}
+	go this.read(wg)
+	go this.asyncWrite(wg)
+	wg.Wait()
 }
