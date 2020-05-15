@@ -11,17 +11,17 @@ const (
 )
 
 const (
-	maxMsgSize     = 8192
-	readTimeout    = 10
-	writeTimeout   = 10
-	asyncWriteSize = 20
+	MaxMsgSize     = 8192
+	ReadTimeout    = 10
+	WriteTimeout   = 10
+	AsyncWriteSize = 20
 
-	pongWait         = 60
-	pingPeriod       = (pongWait * 9) / 10
-	closeGracePeriod = 1
+	PongWait         = 60
+	PingPeriod       = (PongWait * 9) / 10
+	CloseGracePeriod = 1
 )
 
-type connOptions struct {
+type ConnOptions struct {
 	maxMsgSize     int64
 	readTimeout    int64
 	writeTimeout   int64
@@ -33,8 +33,8 @@ type connOptions struct {
 	closeGracePeriod int64
 }
 
-func newTcpConnOptions(side int8, maxMsgSize int64, readTimeout int64, writeTimeout int64, asyncWriteSize int) *connOptions {
-	return &connOptions{
+func NewtcpConnOptions(side int8, maxMsgSize int64, readTimeout int64, writeTimeout int64, asyncWriteSize int) *ConnOptions {
+	return &ConnOptions{
 		maxMsgSize:     maxMsgSize,
 		readTimeout:    readTimeout,
 		writeTimeout:   writeTimeout,
@@ -43,9 +43,9 @@ func newTcpConnOptions(side int8, maxMsgSize int64, readTimeout int64, writeTime
 	}
 }
 
-func newWsConnOptions(side int8, maxMsgSize int64, readTimeout int64, writeTimeout int64, asyncWriteSize int,
-	pongWait int64, pingPeriod int64, closeGracePeriod int64) *connOptions {
-	return &connOptions{
+func NewwsConnOptions(side int8, maxMsgSize int64, readTimeout int64, writeTimeout int64, asyncWriteSize int,
+	pongWait int64, pingPeriod int64, closeGracePeriod int64) *ConnOptions {
+	return &ConnOptions{
 		maxMsgSize:     maxMsgSize,
 		readTimeout:    readTimeout,
 		writeTimeout:   writeTimeout,
@@ -58,7 +58,7 @@ func newWsConnOptions(side int8, maxMsgSize int64, readTimeout int64, writeTimeo
 	}
 }
 
-func checkOp(co *connOptions, handler interf.Handler) error {
+func checkOp(co *ConnOptions, handler interf.Handler) error {
 	if co.asyncWriteSize <= 0 {
 		return cst.ErrCreateConnInvalidParam
 	}

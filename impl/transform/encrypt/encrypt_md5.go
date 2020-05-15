@@ -4,20 +4,26 @@ import (
 	"crypto/md5"
 	"errors"
 	"fmt"
-
+	"github.com/jumper86/jumper_conn/interf"
 	"github.com/jumper86/jumper_conn/util"
 )
 
-type EncryptOpMd5 struct {
+type encryptOpMd5 struct {
 	direct bool
 }
 
-func (self *EncryptOpMd5) Init(direct bool, params []interface{}) bool {
+func NewencryptOpMd5(direct bool, params []interface{}) interf.EncryptOp {
+	var op encryptOpMd5
+	op.init(direct, params)
+	return &op
+}
+
+func (self *encryptOpMd5) init(direct bool, params []interface{}) bool {
 	self.direct = direct
 	return true
 }
 
-func (self *EncryptOpMd5) Operate(input interface{}, output interface{}) (bool, error) {
+func (self *encryptOpMd5) Operate(input interface{}, output interface{}) (bool, error) {
 
 	if self.direct {
 		tmpOutput, err := self.Encrypt(input.([]byte))
@@ -36,15 +42,15 @@ func (self *EncryptOpMd5) Operate(input interface{}, output interface{}) (bool, 
 	return true, nil
 }
 
-func (*EncryptOpMd5) Encrypt(data []byte) ([]byte, error) {
-	defer util.TraceLog("EncryptOpMd5.Encrypt")()
+func (*encryptOpMd5) Encrypt(data []byte) ([]byte, error) {
+	defer util.TraceLog("encryptOpMd5.Encrypt")()
 	r := md5.Sum(data)
 	rst := r[:]
 	return rst, nil
 
 }
 
-func (*EncryptOpMd5) Decrypt(data []byte) ([]byte, error) {
-	defer util.TraceLog("EncryptOpMd5.Decrypt")()
+func (*encryptOpMd5) Decrypt(data []byte) ([]byte, error) {
+	defer util.TraceLog("encryptOpMd5.Decrypt")()
 	return nil, errors.New("md5 couldn't decrypt.")
 }

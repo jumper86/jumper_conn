@@ -4,21 +4,27 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"reflect"
-
+	"github.com/jumper86/jumper_conn/interf"
 	"github.com/jumper86/jumper_conn/util"
+	"reflect"
 )
 
-type PacketOpBase64 struct {
+type packetOpBase64 struct {
 	direct bool
 }
 
-func (self *PacketOpBase64) Init(direct bool, params []interface{}) bool {
+func NewpacketOpBase64(direct bool, params []interface{}) interf.PacketOp {
+	var op packetOpBase64
+	op.init(direct, params)
+	return &op
+}
+
+func (self *packetOpBase64) init(direct bool, params []interface{}) bool {
 	self.direct = direct
 	return true
 }
 
-func (self *PacketOpBase64) Operate(input interface{}, output interface{}) (bool, error) {
+func (self *packetOpBase64) Operate(input interface{}, output interface{}) (bool, error) {
 
 	if self.direct {
 		tmpOutput, err := self.Pack(input)
@@ -42,12 +48,12 @@ func (self *PacketOpBase64) Operate(input interface{}, output interface{}) (bool
 }
 
 //此函数中需要检查入参是否为 string / []byte
-func (*PacketOpBase64) Pack(originData interface{}) ([]byte, error) {
-	defer util.TraceLog("PacketOpBase64.Pack")()
+func (*packetOpBase64) Pack(originData interface{}) ([]byte, error) {
+	defer util.TraceLog("packetOpBase64.Pack")()
 	//需要判断入参类型为 string 或者 []byte
 	vod := reflect.ValueOf(originData)
 	tod := reflect.TypeOf(originData)
-	if !vod.IsValid() {
+	if vod.IsValid() == false {
 		fmt.Println("originData's value is nil.")
 		return nil, errors.New("originData's value is nil")
 	}
@@ -71,9 +77,9 @@ func (*PacketOpBase64) Pack(originData interface{}) ([]byte, error) {
 	return nil, errors.New("invalid param type, use string or []byte.")
 }
 
-func (*PacketOpBase64) Unpack(packData []byte, obj interface{}) error {
+func (*packetOpBase64) Unpack(packData []byte, obj interface{}) error {
 
-	defer util.TraceLog("PacketOpBase64.Unpack")()
+	defer util.TraceLog("packetOpBase64.Unpack")()
 	//判断接收结果的入参是一个*[]byte
 	tod := reflect.TypeOf(obj)
 	vod := reflect.ValueOf(obj)

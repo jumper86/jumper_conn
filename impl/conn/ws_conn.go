@@ -12,8 +12,8 @@ import (
 	"github.com/jumper86/jumper_conn/cst"
 )
 
-type WsConn struct {
-	connOptions
+type wsConn struct {
+	ConnOptions
 	conn        *websocket.Conn
 	closed      int32
 	writeBuffer chan []byte
@@ -23,17 +23,17 @@ type WsConn struct {
 	ctx     map[string]interface{}
 }
 
-func NewWsConn(conn *websocket.Conn, co *connOptions, handler interf.Handler) (interf.Conn, error) {
+func NewwsConn(conn *websocket.Conn, co *ConnOptions, handler interf.Handler) (interf.Conn, error) {
 	err := checkOp(co, handler)
 	if err != nil {
 		return nil, err
 	}
-	rc := &WsConn{
+	rc := &wsConn{
 		conn:        conn,
 		closed:      0,
 		writeBuffer: make(chan []byte, co.asyncWriteSize),
 		closeChan:   make(chan struct{}),
-		connOptions: *co,
+		ConnOptions: *co,
 		handler:     handler,
 	}
 
@@ -41,27 +41,27 @@ func NewWsConn(conn *websocket.Conn, co *connOptions, handler interf.Handler) (i
 	return rc, nil
 }
 
-func (this *WsConn) LocalAddr() net.Addr {
+func (this *wsConn) LocalAddr() net.Addr {
 	return this.conn.LocalAddr()
 }
 
-func (this *WsConn) RemoteAddr() net.Addr {
+func (this *wsConn) RemoteAddr() net.Addr {
 	return this.conn.RemoteAddr()
 }
 
-func (this *WsConn) GetConn() net.Conn {
+func (this *wsConn) GetConn() net.Conn {
 	return this.conn.UnderlyingConn()
 }
 
-func (this *WsConn) Close() {
+func (this *wsConn) Close() {
 
 	this.close(nil)
 }
-func (this *WsConn) IsClosed() bool {
+func (this *wsConn) IsClosed() bool {
 	return atomic.LoadInt32(&this.closed) == 1
 }
 
-func (this *WsConn) Write(data []byte) error {
+func (this *wsConn) Write(data []byte) error {
 	closed := this.IsClosed()
 	if closed {
 		return cst.ErrConnClosed
@@ -74,7 +74,7 @@ func (this *WsConn) Write(data []byte) error {
 	return err
 }
 
-func (this *WsConn) AsyncWrite(data []byte) (err error) {
+func (this *wsConn) AsyncWrite(data []byte) (err error) {
 	closed := this.IsClosed()
 	if closed {
 		return cst.ErrConnClosed
@@ -89,30 +89,30 @@ func (this *WsConn) AsyncWrite(data []byte) (err error) {
 	this.writeBuffer <- data
 	return nil
 }
-func (this *WsConn) Set(key string, value interface{}) {
+func (this *wsConn) Set(key string, value interface{}) {
 	this.ctx[key] = value
 }
 
-func (this *WsConn) Get(key string) interface{} {
+func (this *wsConn) Get(key string) interface{} {
 	if value, ok := this.ctx[key]; ok {
 		return value
 	}
 	return nil
 }
 
-func (this *WsConn) Del(key string) {
+func (this *wsConn) Del(key string) {
 	delete(this.ctx, key)
 }
 
 ////////////////////////////////////////////////////////////// impl
 //服务端和客户端都需要
-func (this *WsConn) setReadLimit() {
+func (this *wsConn) setReadLimit() {
 	this.conn.SetReadLimit(this.maxMsgSize)
 }
 
 //服务端发送ping, 接收pong
 //客户端接收ping, 发送pong, 默认底层处理已经使用回复了pong
-func (this *WsConn) sendPing() {
+func (this *wsConn) sendPing() {
 	ticker := time.NewTicker(time.Duration(this.pingPeriod))
 
 	for {
@@ -127,25 +127,25 @@ func (this *WsConn) sendPing() {
 
 }
 
-func (this *WsConn) handlePong() {
+func (this *wsConn) handlePong() {
 	this.conn.SetPongHandler(func(appData string) error {
 		return this.conn.SetReadDeadline(time.Now().Add(time.Duration(this.pongWait) * time.Second))
 	})
 }
 
-func (this *WsConn) setWriteDeadline(timeout int64) {
+func (this *wsConn) setWriteDeadline(timeout int64) {
 	if this.writeTimeout > 0 {
 		this.conn.SetWriteDeadline(time.Now().Add(time.Duration(timeout) * time.Second))
 	}
 }
 
-func (this *WsConn) setReadDeadline(timeout int64) {
+func (this *wsConn) setReadDeadline(timeout int64) {
 	if this.readTimeout > 0 {
 		this.conn.SetReadDeadline(time.Now().Add(time.Duration(timeout) * time.Second))
 	}
 }
 
-func (this *WsConn) close(err error) {
+func (this *wsConn) close(err error) {
 	if !atomic.CompareAndSwapInt32(&this.closed, 0, 1) {
 		return
 	}
@@ -165,7 +165,7 @@ func (this *WsConn) close(err error) {
 
 }
 
-func (this *WsConn) asyncWrite(wg *sync.WaitGroup) error {
+func (this *wsConn) asyncWrite(wg *sync.WaitGroup) error {
 
 	wg.Done()
 
@@ -203,7 +203,7 @@ readLoop:
 	return err
 }
 
-func (this *WsConn) read(wg *sync.WaitGroup) error {
+func (this *wsConn) read(wg *sync.WaitGroup) error {
 
 	wg.Done()
 
@@ -238,7 +238,7 @@ readLoop:
 	return err
 }
 
-func (this *WsConn) run() {
+func (this *wsConn) run() {
 
 	if this.IsClosed() {
 		return

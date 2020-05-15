@@ -13,8 +13,8 @@ import (
 	"github.com/jumper86/jumper_conn/cst"
 )
 
-type RawConn struct {
-	connOptions
+type tcpConn struct {
+	ConnOptions
 	conn        net.Conn
 	closed      int32
 	writeBuffer chan []byte
@@ -24,17 +24,17 @@ type RawConn struct {
 	handler interf.Handler
 }
 
-func NewRawConn(conn net.Conn, co *connOptions, handler interf.Handler) (interf.Conn, error) {
+func NewtcpConn(conn net.Conn, co *ConnOptions, handler interf.Handler) (interf.Conn, error) {
 	err := checkOp(co, handler)
 	if err != nil {
 		return nil, err
 	}
-	rc := &RawConn{
+	rc := &tcpConn{
 		conn:        conn,
 		closed:      0,
 		writeBuffer: make(chan []byte, co.asyncWriteSize),
 		closeChan:   make(chan struct{}),
-		connOptions: *co,
+		ConnOptions: *co,
 		handler:     handler,
 	}
 
@@ -42,26 +42,26 @@ func NewRawConn(conn net.Conn, co *connOptions, handler interf.Handler) (interf.
 	return rc, nil
 }
 
-func (this *RawConn) LocalAddr() net.Addr {
+func (this *tcpConn) LocalAddr() net.Addr {
 	return this.conn.LocalAddr()
 }
-func (this *RawConn) RemoteAddr() net.Addr {
+func (this *tcpConn) RemoteAddr() net.Addr {
 	return this.conn.RemoteAddr()
 }
 
-func (this *RawConn) GetConn() net.Conn {
+func (this *tcpConn) GetConn() net.Conn {
 	return this.conn
 }
 
-func (this *RawConn) Close() {
+func (this *tcpConn) Close() {
 	this.close(nil)
 }
 
-func (this *RawConn) IsClosed() bool {
+func (this *tcpConn) IsClosed() bool {
 	return atomic.LoadInt32(&this.closed) == 1
 }
 
-func (this *RawConn) Write(data []byte) error {
+func (this *tcpConn) Write(data []byte) error {
 	closed := this.IsClosed()
 	if closed {
 		return cst.ErrConnClosed
@@ -89,7 +89,7 @@ func (this *RawConn) Write(data []byte) error {
 	return err
 }
 
-func (this *RawConn) AsyncWrite(data []byte) (err error) {
+func (this *tcpConn) AsyncWrite(data []byte) (err error) {
 
 	closed := this.IsClosed()
 	if closed {
@@ -108,36 +108,36 @@ func (this *RawConn) AsyncWrite(data []byte) (err error) {
 	return nil
 }
 
-func (this *RawConn) Set(key string, value interface{}) {
+func (this *tcpConn) Set(key string, value interface{}) {
 	this.ctx[key] = value
 }
 
-func (this *RawConn) Get(key string) interface{} {
+func (this *tcpConn) Get(key string) interface{} {
 	if value, ok := this.ctx[key]; ok {
 		return value
 	}
 	return nil
 }
 
-func (this *RawConn) Del(key string) {
+func (this *tcpConn) Del(key string) {
 	delete(this.ctx, key)
 }
 
 ////////////////////////////////////////////////////////////// impl
 
-func (this *RawConn) setWriteDeadline(timeout int64) {
+func (this *tcpConn) setWriteDeadline(timeout int64) {
 	if this.writeTimeout > 0 {
 		this.conn.SetWriteDeadline(time.Now().Add(time.Duration(timeout) * time.Second))
 	}
 }
 
-func (this *RawConn) setReadDeadline(timeout int64) {
+func (this *tcpConn) setReadDeadline(timeout int64) {
 	if this.readTimeout > 0 {
 		this.conn.SetReadDeadline(time.Now().Add(time.Duration(timeout) * time.Second))
 	}
 }
 
-func (this *RawConn) close(err error) {
+func (this *tcpConn) close(err error) {
 	swapped := atomic.CompareAndSwapInt32(&this.closed, 0, 1)
 	if !swapped {
 		return
@@ -151,7 +151,7 @@ func (this *RawConn) close(err error) {
 	this.handler.OnClose(err)
 }
 
-func (this *RawConn) asyncWrite(wg *sync.WaitGroup) error {
+func (this *tcpConn) asyncWrite(wg *sync.WaitGroup) error {
 
 	wg.Done()
 
@@ -195,7 +195,7 @@ writeLoop:
 	return err
 }
 
-func (this *RawConn) read(wg *sync.WaitGroup) {
+func (this *tcpConn) read(wg *sync.WaitGroup) {
 
 	wg.Done()
 	var err error
@@ -236,7 +236,7 @@ readLoop:
 	return
 }
 
-func (this *RawConn) run() {
+func (this *tcpConn) run() {
 	if this.IsClosed() {
 		return
 	}

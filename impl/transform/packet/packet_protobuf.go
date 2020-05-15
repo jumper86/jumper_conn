@@ -2,24 +2,29 @@ package packet
 
 import (
 	"errors"
-
-	"github.com/jumper86/jumper_conn/util"
+	"github.com/jumper86/jumper_conn/interf"
 
 	"fmt"
-
 	"github.com/golang/protobuf/proto"
+	"github.com/jumper86/jumper_conn/util"
 )
 
-type PacketOpProtobuf struct {
+type packetOpProtobuf struct {
 	direct bool
 }
 
-func (self *PacketOpProtobuf) Init(direct bool, params []interface{}) bool {
+func NewpacketOpProtobuf(direct bool, params []interface{}) interf.PacketOp {
+	var op packetOpProtobuf
+	op.init(direct, params)
+	return &op
+}
+
+func (self *packetOpProtobuf) init(direct bool, params []interface{}) bool {
 	self.direct = direct
 	return true
 }
 
-func (self *PacketOpProtobuf) Operate(input interface{}, output interface{}) (bool, error) {
+func (self *packetOpProtobuf) Operate(input interface{}, output interface{}) (bool, error) {
 
 	if self.direct {
 		tmpOutput, err := self.Pack(input)
@@ -43,9 +48,9 @@ func (self *PacketOpProtobuf) Operate(input interface{}, output interface{}) (bo
 	return true, nil
 }
 
-func (*PacketOpProtobuf) Pack(originData interface{}) ([]byte, error) {
+func (*packetOpProtobuf) Pack(originData interface{}) ([]byte, error) {
 	//此处需要将interface{} -> proto.Message， 使用类型断言即可
-	defer util.TraceLog("PacketOpProtobuf.Pack")()
+	defer util.TraceLog("packetOpProtobuf.Pack")()
 	data, ok := originData.(proto.Message)
 	if !ok {
 		return nil, errors.New("param not implement interface proto.Message.")
@@ -54,9 +59,9 @@ func (*PacketOpProtobuf) Pack(originData interface{}) ([]byte, error) {
 	return proto.Marshal(data)
 }
 
-func (*PacketOpProtobuf) Unpack(packData []byte, obj interface{}) error {
+func (*packetOpProtobuf) Unpack(packData []byte, obj interface{}) error {
 
-	defer util.TraceLog("PacketOpProtobuf.Unpack")()
+	defer util.TraceLog("packetOpProtobuf.Unpack")()
 	decodedData, ok := obj.(proto.Message)
 	if !ok {
 		return errors.New("param not implement interface proto.Message.")

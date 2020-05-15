@@ -3,20 +3,26 @@ package packet
 import (
 	"encoding/json"
 	"fmt"
-
+	"github.com/jumper86/jumper_conn/interf"
 	"github.com/jumper86/jumper_conn/util"
 )
 
-type PacketOpJson struct {
+type packetOpJson struct {
 	direct bool
 }
 
-func (self *PacketOpJson) Init(direct bool, params []interface{}) bool {
+func NewpacketOpJson(direct bool, params []interface{}) interf.PacketOp {
+	var op packetOpJson
+	op.init(direct, params)
+	return &op
+}
+
+func (self *packetOpJson) init(direct bool, params []interface{}) bool {
 	self.direct = direct
 	return true
 }
 
-func (self *PacketOpJson) Operate(input interface{}, output interface{}) (bool, error) {
+func (self *packetOpJson) Operate(input interface{}, output interface{}) (bool, error) {
 
 	if self.direct {
 		tmpOutput, err := self.Pack(input)
@@ -39,14 +45,14 @@ func (self *PacketOpJson) Operate(input interface{}, output interface{}) (bool, 
 	return true, nil
 }
 
-func (*PacketOpJson) Pack(originData interface{}) ([]byte, error) {
-	defer util.TraceLog("PacketOpJson.Pack")()
+func (*packetOpJson) Pack(originData interface{}) ([]byte, error) {
+	defer util.TraceLog("packetOpJson.Pack")()
 
 	return json.Marshal(originData)
 }
 
-func (*PacketOpJson) Unpack(packData []byte, obj interface{}) error {
-	defer util.TraceLog("PacketOpJson.Unpack")()
+func (*packetOpJson) Unpack(packData []byte, obj interface{}) error {
+	defer util.TraceLog("packetOpJson.Unpack")()
 
 	//关于解析动态内容：interface{} 参见如下网页：
 	// http://cizixs.com/2016/12/19/golang-json-guide

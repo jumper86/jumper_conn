@@ -4,21 +4,27 @@ import (
 	"bytes"
 	"compress/zlib"
 	"fmt"
-	"io"
-
+	"github.com/jumper86/jumper_conn/interf"
 	"github.com/jumper86/jumper_conn/util"
+	"io"
 )
 
-type CompressOpZlib struct {
+type compressOpZlib struct {
 	direct bool
 }
 
-func (self *CompressOpZlib) Init(direct bool, params []interface{}) bool {
+func NewcompressOpZlib(direct bool, params []interface{}) interf.CompressOp {
+	var op compressOpZlib
+	op.init(direct, params)
+	return &op
+}
+
+func (self *compressOpZlib) init(direct bool, params []interface{}) bool {
 	self.direct = direct
 	return true
 }
 
-func (self *CompressOpZlib) Operate(input interface{}, output interface{}) (bool, error) {
+func (self *compressOpZlib) Operate(input interface{}, output interface{}) (bool, error) {
 
 	if self.direct {
 		tmpOutput, err := self.Compress(input.([]byte))
@@ -39,10 +45,11 @@ func (self *CompressOpZlib) Operate(input interface{}, output interface{}) (bool
 		return true, nil
 	}
 
+	return true, nil
 }
 
-func (self *CompressOpZlib) Compress(data []byte) ([]byte, error) {
-	defer util.TraceLog("CompressOpZlib.Compress")()
+func (self *compressOpZlib) Compress(data []byte) ([]byte, error) {
+	defer util.TraceLog("compressOpZlib.Compress")()
 	var buf bytes.Buffer
 	c := zlib.NewWriter(&buf)
 
@@ -59,9 +66,9 @@ func (self *CompressOpZlib) Compress(data []byte) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func (self *CompressOpZlib) Decompress(data []byte) ([]byte, error) {
+func (self *compressOpZlib) Decompress(data []byte) ([]byte, error) {
 
-	defer util.TraceLog("CompressOpZlib.Decompress")()
+	defer util.TraceLog("compressOpZlib.Decompress")()
 	nr := bytes.NewReader(data)
 	dc, err := zlib.NewReader(nr)
 	if err != nil {

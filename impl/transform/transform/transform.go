@@ -2,7 +2,11 @@ package transform
 
 import (
 	"fmt"
+	"github.com/jumper86/jumper_conn/interf"
 
+	//"../compress"
+	//"../encrypt"
+	//"../packet"
 	"github.com/jumper86/jumper_conn/impl/transform/compress"
 	"github.com/jumper86/jumper_conn/impl/transform/encrypt"
 	"github.com/jumper86/jumper_conn/impl/transform/packet"
@@ -18,27 +22,32 @@ import (
 
 //因此在实际项目使用中可以考虑定义一个全局的 map[string]Transform　不同的需求定义不同的　Transform　放入其中．
 
-type Transform struct {
-	opLink []Operation
+type transform struct {
+	opLink []interf.Operation
 }
 
-func (self *Transform) checkParam(opType int, direct bool, params []interface{}) bool {
-	if opType <= PackageOpMin || opType >= PackageOpMax {
+func Newtransform() interf.Transform {
+	var tf transform
+	return &tf
+}
+
+func (self *transform) checkParam(opType interf.OperationType, direct bool, params []interface{}) bool {
+	if opType <= interf.PackageOpMin || opType >= interf.PackageOpMax {
 		fmt.Println("invalid opType.")
 		return false
 	}
 
-	if (opType == EncryptMd5 || opType == EncryptSha1) && !direct {
+	if (opType == interf.EncryptMd5 || opType == interf.EncryptSha1) && !direct {
 		fmt.Println("md5 | sha1 couldn't direct false.")
 		return false
 	}
 
-	if (opType == EncryptAes || opType == EncryptDes) && len(params) != 1 {
+	if (opType == interf.EncryptAes || opType == interf.EncryptDes) && len(params) != 1 {
 		fmt.Println("aes | des should set key.")
 		return false
 	}
 
-	if (opType == EncryptRsa) && len(params) != 2 {
+	if (opType == interf.EncryptRsa) && len(params) != 2 {
 		fmt.Println(" rsa should set key.")
 		return false
 	}
@@ -46,70 +55,59 @@ func (self *Transform) checkParam(opType int, direct bool, params []interface{})
 	return true
 }
 
-func (self *Transform) AddOp(opType int, direct bool, params []interface{}) bool {
+func (self *transform) AddOp(opType interf.OperationType, direct bool, params []interface{}) bool {
 	if !self.checkParam(opType, direct, params) {
 		return false
 	}
 
-	var op Operation
+	var op interf.Operation
 
 	switch opType {
 	//编码
-	case PacketBase64:
-		op = new(packet.PacketOpBase64)
-		op.Init(direct, nil)
+	case interf.PacketBase64:
+		op = packet.NewpacketOpBase64(direct, nil)
 		break
 
-	case PacketJson:
-		op = new(packet.PacketOpJson)
-		op.Init(direct, nil)
+	case interf.PacketJson:
+		op = packet.NewpacketOpJson(direct, nil)
 		break
 
-	case PacketXml:
-		op = new(packet.PacketOpXml)
-		op.Init(direct, nil)
+	case interf.PacketXml:
+		op = packet.NewpacketOpXml(direct, nil)
 		break
 
-	case PacketProtobuf:
-		op = new(packet.PacketOpProtobuf)
-		op.Init(direct, nil)
+	case interf.PacketProtobuf:
+		op = packet.NewpacketOpProtobuf(direct, nil)
 		break
 
 		//压缩
-	case CompressGzip:
-		op = new(compress.CompressOpGzip)
-		op.Init(direct, nil)
+	case interf.CompressGzip:
+		op = compress.NewcompressOpGzip(direct, nil)
 		break
 
-	case CompressZlib:
-		op = new(compress.CompressOpZlib)
-		op.Init(direct, nil)
+	case interf.CompressZlib:
+		op = compress.NewcompressOpZlib(direct, nil)
 		break
 
 		//加密
-	case EncryptMd5:
-		op = new(encrypt.EncryptOpMd5)
-		op.Init(direct, nil)
+	case interf.EncryptMd5:
+		op = encrypt.NewencryptOpMd5(direct, nil)
 		break
 
-	case EncryptSha1:
-		op = new(encrypt.EncryptOpSha1)
-		op.Init(direct, nil)
+	case interf.EncryptSha1:
+		op = encrypt.NewencryptOpSha1(direct, nil)
 		break
 
-	case EncryptAes:
-		op = new(encrypt.EncryptOpAes)
-		op.Init(direct, params)
+	case interf.EncryptAes:
+		op = encrypt.NewencryptOpAes(direct, params)
 		break
 
-	case EncryptDes:
-		op = new(encrypt.EncryptOpDes)
-		op.Init(direct, params)
+	case interf.EncryptDes:
+		op = encrypt.NewencryptOpDes(direct, params)
 		break
 
-	case EncryptRsa:
-		op = new(encrypt.EncryptOpRsa)
-		op.Init(direct, params)
+	case interf.EncryptRsa:
+		op = encrypt.NewencryptOpRsa(direct, params)
 		break
 
 	default:
@@ -122,7 +120,7 @@ func (self *Transform) AddOp(opType int, direct bool, params []interface{}) bool
 
 }
 
-func (self *Transform) Execute(input interface{}, output interface{}) error {
+func (self *transform) Execute(input interface{}, output interface{}) error {
 
 	//这里是一个链式反应，因此需要根据op类型来构建中间类型
 	//中间过程的输出都是 []byte
@@ -149,7 +147,7 @@ func (self *Transform) Execute(input interface{}, output interface{}) error {
 	return nil
 }
 
-func (self *Transform) Reset() {
+func (self *transform) Reset() {
 	if len(self.opLink) != 0 {
 		self.opLink = self.opLink[:0]
 	}

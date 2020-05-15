@@ -6,17 +6,23 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
-	"io"
-
+	"github.com/jumper86/jumper_conn/interf"
 	"github.com/jumper86/jumper_conn/util"
+	"io"
 )
 
-type EncryptOpDes struct {
+type encryptOpDes struct {
 	desKey []byte
 	direct bool
 }
 
-func (self *EncryptOpDes) Init(direct bool, params []interface{}) bool {
+func NewencryptOpDes(direct bool, params []interface{}) interf.EncryptOp {
+	var op encryptOpDes
+	op.init(direct, params)
+	return &op
+}
+
+func (self *encryptOpDes) init(direct bool, params []interface{}) bool {
 
 	if params == nil || len(params) != 1 {
 		fmt.Printf("invalid param count.")
@@ -39,7 +45,7 @@ func (self *EncryptOpDes) Init(direct bool, params []interface{}) bool {
 	return true
 }
 
-func (self *EncryptOpDes) Operate(input interface{}, output interface{}) (bool, error) {
+func (self *encryptOpDes) Operate(input interface{}, output interface{}) (bool, error) {
 
 	if self.direct {
 		tmpOutput, err := self.Encrypt(input.([]byte))
@@ -63,9 +69,9 @@ func (self *EncryptOpDes) Operate(input interface{}, output interface{}) (bool, 
 	return true, nil
 }
 
-func (self *EncryptOpDes) Encrypt(data []byte) ([]byte, error) {
+func (self *encryptOpDes) Encrypt(data []byte) ([]byte, error) {
 
-	defer util.TraceLog("EncryptOpDes.Encrypt")()
+	defer util.TraceLog("encryptOpDes.Encrypt")()
 	if data == nil || self.desKey == nil {
 		return nil, errors.New("invalid self.desKey or data")
 	}
@@ -97,9 +103,9 @@ func (self *EncryptOpDes) Encrypt(data []byte) ([]byte, error) {
 	return ciphertext, nil
 }
 
-func (self *EncryptOpDes) Decrypt(data []byte) ([]byte, error) {
+func (self *encryptOpDes) Decrypt(data []byte) ([]byte, error) {
 
-	defer util.TraceLog("EncryptOpDes.Decrypt")()
+	defer util.TraceLog("encryptOpDes.Decrypt")()
 	block, err := des.NewCipher(self.desKey)
 	if err != nil {
 		panic(err)

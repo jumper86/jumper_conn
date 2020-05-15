@@ -3,20 +3,26 @@ package packet
 import (
 	"encoding/xml"
 	"fmt"
-
+	"github.com/jumper86/jumper_conn/interf"
 	"github.com/jumper86/jumper_conn/util"
 )
 
-type PacketOpXml struct {
+type packetOpXml struct {
 	direct bool
 }
 
-func (self *PacketOpXml) Init(direct bool, params []interface{}) bool {
+func NewpacketOpXml(direct bool, params []interface{}) interf.PacketOp {
+	var op packetOpXml
+	op.init(direct, params)
+	return &op
+}
+
+func (self *packetOpXml) init(direct bool, params []interface{}) bool {
 	self.direct = direct
 	return true
 }
 
-func (self *PacketOpXml) Operate(input interface{}, output interface{}) (bool, error) {
+func (self *packetOpXml) Operate(input interface{}, output interface{}) (bool, error) {
 
 	if self.direct {
 		tmpOutput, err := self.Pack(input)
@@ -41,13 +47,13 @@ func (self *PacketOpXml) Operate(input interface{}, output interface{}) (bool, e
 
 //todo: xml是不能对 map 编码的, 这里需要添加检查
 //https://stackoverflow.com/questions/30928770/marshall-map-to-xml-in-go?utm_medium=organic&utm_source=google_rich_qa&utm_campaign=google_rich_qa
-func (*PacketOpXml) Pack(originData interface{}) ([]byte, error) {
-	defer util.TraceLog("PacketOpXml.Pack")()
+func (*packetOpXml) Pack(originData interface{}) ([]byte, error) {
+	defer util.TraceLog("packetOpXml.Pack")()
 	return xml.Marshal(originData)
 }
 
-func (*PacketOpXml) Unpack(packData []byte, obj interface{}) error {
-	defer util.TraceLog("PacketOpXml.Unpack")()
+func (*packetOpXml) Unpack(packData []byte, obj interface{}) error {
+	defer util.TraceLog("packetOpXml.Unpack")()
 
 	//fmt.Println("type: ", reflect.ValueOf(obj).Type())
 	err := xml.Unmarshal(packData, obj)

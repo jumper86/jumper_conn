@@ -4,20 +4,26 @@ import (
 	"crypto/sha1"
 	"errors"
 	"fmt"
-
+	"github.com/jumper86/jumper_conn/interf"
 	"github.com/jumper86/jumper_conn/util"
 )
 
-type EncryptOpSha1 struct {
+type encryptOpSha1 struct {
 	direct bool
 }
 
-func (self *EncryptOpSha1) Init(direct bool, params []interface{}) bool {
+func NewencryptOpSha1(direct bool, params []interface{}) interf.EncryptOp {
+	var op encryptOpSha1
+	op.init(direct, params)
+	return &op
+}
+
+func (self *encryptOpSha1) init(direct bool, params []interface{}) bool {
 	self.direct = direct
 	return true
 }
 
-func (self *EncryptOpSha1) Operate(input interface{}, output interface{}) (bool, error) {
+func (self *encryptOpSha1) Operate(input interface{}, output interface{}) (bool, error) {
 
 	if self.direct {
 		tmpOutput, err := self.Encrypt(input.([]byte))
@@ -36,15 +42,15 @@ func (self *EncryptOpSha1) Operate(input interface{}, output interface{}) (bool,
 	return true, nil
 }
 
-func (*EncryptOpSha1) Encrypt(data []byte) ([]byte, error) {
-	defer util.TraceLog("EncryptOpSha1.Encrypt")()
+func (*encryptOpSha1) Encrypt(data []byte) ([]byte, error) {
+	defer util.TraceLog("encryptOpSha1.Encrypt")()
 	r := sha1.Sum(data)
 	rst := r[:]
 	return rst, nil
 
 }
 
-func (*EncryptOpSha1) Decrypt(data []byte) ([]byte, error) {
-	defer util.TraceLog("EncryptOpSha1.Decrypt")()
+func (*encryptOpSha1) Decrypt(data []byte) ([]byte, error) {
+	defer util.TraceLog("encryptOpSha1.Decrypt")()
 	return nil, errors.New("sha1 couldn't decrypt.")
 }
