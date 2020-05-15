@@ -14,16 +14,15 @@ import (
 type encryptOpRsa struct {
 	rsaPublicKeyRemote []byte // 来自对端生成的公钥，用于加密
 	rsaPrivateKeyLocal []byte // 来自本端生成的私钥
-	direct             bool
 }
 
-func NewencryptOpRsa(direct bool, params []interface{}) interf.EncryptOp {
+func NewencryptOpRsa(params []interface{}) interf.EncryptOp {
 	var op encryptOpRsa
-	op.init(direct, params)
+	op.init(params)
 	return &op
 }
 
-func (self *encryptOpRsa) init(direct bool, params []interface{}) bool {
+func (self *encryptOpRsa) init(params []interface{}) bool {
 	if len(params) != 2 {
 		fmt.Printf("invalid param count.")
 		return false
@@ -46,14 +45,12 @@ func (self *encryptOpRsa) init(direct bool, params []interface{}) bool {
 		return false
 	}
 
-	self.direct = direct
-
 	return true
 }
 
-func (self *encryptOpRsa) Operate(input interface{}, output interface{}) (bool, error) {
+func (self *encryptOpRsa) Operate(direct int8, input interface{}, output interface{}) (bool, error) {
 
-	if self.direct {
+	if direct == interf.Forward {
 		tmpOutput, err := self.Encrypt(input.([]byte))
 		if err != nil {
 			fmt.Printf("pack failed. err: %s", err)

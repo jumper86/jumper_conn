@@ -9,23 +9,21 @@ import (
 )
 
 type encryptOpSha1 struct {
-	direct bool
 }
 
-func NewencryptOpSha1(direct bool, params []interface{}) interf.EncryptOp {
+func NewencryptOpSha1(params []interface{}) interf.EncryptOp {
 	var op encryptOpSha1
-	op.init(direct, params)
+	op.init(params)
 	return &op
 }
 
-func (self *encryptOpSha1) init(direct bool, params []interface{}) bool {
-	self.direct = direct
+func (self *encryptOpSha1) init(params []interface{}) bool {
 	return true
 }
 
-func (self *encryptOpSha1) Operate(input interface{}, output interface{}) (bool, error) {
+func (self *encryptOpSha1) Operate(direct int8, input interface{}, output interface{}) (bool, error) {
 
-	if self.direct {
+	if direct == interf.Forward {
 		tmpOutput, err := self.Encrypt(input.([]byte))
 		if err != nil {
 			fmt.Printf("pack failed. err: %s", err)

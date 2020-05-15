@@ -9,23 +9,21 @@ import (
 )
 
 type encryptOpMd5 struct {
-	direct bool
 }
 
-func NewencryptOpMd5(direct bool, params []interface{}) interf.EncryptOp {
+func NewencryptOpMd5(params []interface{}) interf.EncryptOp {
 	var op encryptOpMd5
-	op.init(direct, params)
+	op.init(params)
 	return &op
 }
 
-func (self *encryptOpMd5) init(direct bool, params []interface{}) bool {
-	self.direct = direct
+func (self *encryptOpMd5) init(params []interface{}) bool {
 	return true
 }
 
-func (self *encryptOpMd5) Operate(input interface{}, output interface{}) (bool, error) {
+func (self *encryptOpMd5) Operate(direct int8, input interface{}, output interface{}) (bool, error) {
 
-	if self.direct {
+	if direct == interf.Forward {
 		tmpOutput, err := self.Encrypt(input.([]byte))
 		if err != nil {
 			fmt.Printf("pack failed. err: %s", err)

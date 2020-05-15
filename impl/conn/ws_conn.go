@@ -37,8 +37,11 @@ func NewwsConn(conn *websocket.Conn, co *ConnOptions, handler interf.Handler) (i
 		handler:     handler,
 	}
 
-	rc.run()
 	return rc, nil
+}
+
+func (this *wsConn) Run() {
+	this.run()
 }
 
 func (this *wsConn) LocalAddr() net.Addr {
@@ -245,7 +248,7 @@ func (this *wsConn) run() {
 	}
 
 	this.setReadLimit()
-	if this.side == ServerSide {
+	if this.side == cst.ServerSide {
 		go this.sendPing()
 		this.handlePong()
 	}

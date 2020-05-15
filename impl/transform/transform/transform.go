@@ -4,9 +4,6 @@ import (
 	"fmt"
 	"github.com/jumper86/jumper_conn/interf"
 
-	//"../compress"
-	//"../encrypt"
-	//"../packet"
 	"github.com/jumper86/jumper_conn/impl/transform/compress"
 	"github.com/jumper86/jumper_conn/impl/transform/encrypt"
 	"github.com/jumper86/jumper_conn/impl/transform/packet"
@@ -31,16 +28,16 @@ func Newtransform() interf.Transform {
 	return &tf
 }
 
-func (self *transform) checkParam(opType interf.OperationType, direct bool, params []interface{}) bool {
+func (self *transform) checkParam(opType interf.OperationType, params []interface{}) bool {
 	if opType <= interf.PackageOpMin || opType >= interf.PackageOpMax {
 		fmt.Println("invalid opType.")
 		return false
 	}
 
-	if (opType == interf.EncryptMd5 || opType == interf.EncryptSha1) && !direct {
-		fmt.Println("md5 | sha1 couldn't direct false.")
-		return false
-	}
+	//if (opType == interf.EncryptMd5 || opType == interf.EncryptSha1) && !direct {
+	//	fmt.Println("md5 | sha1 couldn't direct false.")
+	//	return false
+	//}
 
 	if (opType == interf.EncryptAes || opType == interf.EncryptDes) && len(params) != 1 {
 		fmt.Println("aes | des should set key.")
@@ -55,8 +52,8 @@ func (self *transform) checkParam(opType interf.OperationType, direct bool, para
 	return true
 }
 
-func (self *transform) AddOp(opType interf.OperationType, direct bool, params []interface{}) bool {
-	if !self.checkParam(opType, direct, params) {
+func (self *transform) AddOp(opType interf.OperationType, params []interface{}) bool {
+	if !self.checkParam(opType, params) {
 		return false
 	}
 
@@ -65,49 +62,53 @@ func (self *transform) AddOp(opType interf.OperationType, direct bool, params []
 	switch opType {
 	//编码
 	case interf.PacketBase64:
-		op = packet.NewpacketOpBase64(direct, nil)
+		op = packet.NewpacketOpBase64(nil)
 		break
 
 	case interf.PacketJson:
-		op = packet.NewpacketOpJson(direct, nil)
+		op = packet.NewpacketOpJson(nil)
 		break
 
 	case interf.PacketXml:
-		op = packet.NewpacketOpXml(direct, nil)
+		op = packet.NewpacketOpXml(nil)
 		break
 
 	case interf.PacketProtobuf:
-		op = packet.NewpacketOpProtobuf(direct, nil)
+		op = packet.NewpacketOpProtobuf(nil)
+		break
+
+	case interf.PacketBinary:
+		op = packet.NewpacketOpBinary(nil)
 		break
 
 		//压缩
 	case interf.CompressGzip:
-		op = compress.NewcompressOpGzip(direct, nil)
+		op = compress.NewcompressOpGzip(nil)
 		break
 
 	case interf.CompressZlib:
-		op = compress.NewcompressOpZlib(direct, nil)
+		op = compress.NewcompressOpZlib(nil)
 		break
 
 		//加密
 	case interf.EncryptMd5:
-		op = encrypt.NewencryptOpMd5(direct, nil)
+		op = encrypt.NewencryptOpMd5(nil)
 		break
 
 	case interf.EncryptSha1:
-		op = encrypt.NewencryptOpSha1(direct, nil)
+		op = encrypt.NewencryptOpSha1(nil)
 		break
 
 	case interf.EncryptAes:
-		op = encrypt.NewencryptOpAes(direct, params)
+		op = encrypt.NewencryptOpAes(params)
 		break
 
 	case interf.EncryptDes:
-		op = encrypt.NewencryptOpDes(direct, params)
+		op = encrypt.NewencryptOpDes(params)
 		break
 
 	case interf.EncryptRsa:
-		op = encrypt.NewencryptOpRsa(direct, params)
+		op = encrypt.NewencryptOpRsa(params)
 		break
 
 	default:
@@ -120,7 +121,7 @@ func (self *transform) AddOp(opType interf.OperationType, direct bool, params []
 
 }
 
-func (self *transform) Execute(input interface{}, output interface{}) error {
+func (self *transform) Execute(direct int8, input interface{}, output interface{}) error {
 
 	//这里是一个链式反应，因此需要根据op类型来构建中间类型
 	//中间过程的输出都是 []byte
@@ -128,19 +129,54 @@ func (self *transform) Execute(input interface{}, output interface{}) error {
 	var tmpInput interface{}
 	tmpInput = input
 
-	for k := range self.opLink {
-		if k == len(self.opLink)-1 {
-			rst, err := self.opLink[k].Operate(tmpInput, output)
-			if !rst {
-				fmt.Printf("op error: %s", err)
-				return err
-			}
-			fmt.Printf("\ntmpInput: %v,\noutput: %v\n\n", tmpInput, output)
+	if direct == interf.Forward {
+		//for k := range self.opLink {
+		//	if k == len(self.opLink)-1 {
+		//		rst, err := self.opLink[k].Operate(direct, tmpInput, output)
+		//		if !rst {
+		//			fmt.Printf("op error: %s", err)
+		//			return err
+		//		}
+		//		fmt.Printf("\ntmpInput: %v,\noutput: %v\n\n", tmpInput, output)
+		//
+		//	} else {
+		//		self.opLink[k].Operate(direct, tmpInput, &tmpOutput)
+		//		fmt.Printf("\ntmpInput: %v,\ntmpOutput: %v\n\n", tmpInput, tmpOutput)
+		//		tmpInput = tmpOutput
+		//	}
+		//}
 
-		} else {
-			self.opLink[k].Operate(tmpInput, &tmpOutput)
-			fmt.Printf("\ntmpInput: %v,\ntmpOutput: %v\n\n", tmpInput, tmpOutput)
-			tmpInput = tmpOutput
+		for index := 0; index <= len(self.opLink)-1; index++ {
+			if index == len(self.opLink)-1 {
+				rst, err := self.opLink[index].Operate(direct, tmpInput, output)
+				if !rst {
+					fmt.Printf("op error: %s", err)
+					return err
+				}
+				fmt.Printf("\ntmpInput: %v,\noutput: %v\n\n", tmpInput, output)
+
+			} else {
+				self.opLink[index].Operate(direct, tmpInput, &tmpOutput)
+				fmt.Printf("\ntmpInput: %v,\ntmpOutput: %v\n\n", tmpInput, tmpOutput)
+				tmpInput = tmpOutput
+			}
+		}
+
+	} else {
+		for index := len(self.opLink) - 1; index >= 0; index-- {
+			if index == 0 {
+				rst, err := self.opLink[index].Operate(direct, tmpInput, output)
+				if !rst {
+					fmt.Printf("op error: %s", err)
+					return err
+				}
+				fmt.Printf("\ntmpInput: %v,\noutput: %v\n\n", tmpInput, output)
+
+			} else {
+				self.opLink[index].Operate(direct, tmpInput, &tmpOutput)
+				fmt.Printf("\ntmpInput: %v,\ntmpOutput: %v\n\n", tmpInput, tmpOutput)
+				tmpInput = tmpOutput
+			}
 		}
 	}
 

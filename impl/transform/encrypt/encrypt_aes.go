@@ -13,16 +13,15 @@ import (
 
 type encryptOpAes struct {
 	aesKey []byte
-	direct bool
 }
 
-func NewencryptOpAes(direct bool, params []interface{}) interf.EncryptOp {
+func NewencryptOpAes(params []interface{}) interf.EncryptOp {
 	var op encryptOpAes
-	op.init(direct, params)
+	op.init(params)
 	return &op
 }
 
-func (self *encryptOpAes) init(direct bool, params []interface{}) bool {
+func (self *encryptOpAes) init(params []interface{}) bool {
 
 	if params == nil || len(params) != 1 {
 		fmt.Printf("invalid param count.")
@@ -41,13 +40,12 @@ func (self *encryptOpAes) init(direct bool, params []interface{}) bool {
 		return false
 	}
 
-	self.direct = direct
 	return true
 }
 
-func (self *encryptOpAes) Operate(input interface{}, output interface{}) (bool, error) {
+func (self *encryptOpAes) Operate(direct int8, input interface{}, output interface{}) (bool, error) {
 
-	if self.direct {
+	if direct == interf.Forward {
 		tmpOutput, err := self.Encrypt(input.([]byte))
 		if err != nil {
 			fmt.Printf("pack failed. err: %s", err)

@@ -10,23 +10,21 @@ import (
 )
 
 type compressOpZlib struct {
-	direct bool
 }
 
-func NewcompressOpZlib(direct bool, params []interface{}) interf.CompressOp {
+func NewcompressOpZlib(params []interface{}) interf.CompressOp {
 	var op compressOpZlib
-	op.init(direct, params)
+	op.init(params)
 	return &op
 }
 
-func (self *compressOpZlib) init(direct bool, params []interface{}) bool {
-	self.direct = direct
+func (self *compressOpZlib) init(params []interface{}) bool {
 	return true
 }
 
-func (self *compressOpZlib) Operate(input interface{}, output interface{}) (bool, error) {
+func (self *compressOpZlib) Operate(direct int8, input interface{}, output interface{}) (bool, error) {
 
-	if self.direct {
+	if direct == interf.Forward {
 		tmpOutput, err := self.Compress(input.([]byte))
 		if err != nil {
 			fmt.Printf("pack failed. err: %s", err)

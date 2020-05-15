@@ -18,4 +18,6 @@ type Conn interface {
 	Set(string, interface{})
 	Get(string) interface{}
 	Del(string)
+
+	Run()
 }

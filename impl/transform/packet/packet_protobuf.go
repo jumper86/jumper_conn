@@ -10,23 +10,21 @@ import (
 )
 
 type packetOpProtobuf struct {
-	direct bool
 }
 
-func NewpacketOpProtobuf(direct bool, params []interface{}) interf.PacketOp {
+func NewpacketOpProtobuf(params []interface{}) interf.PacketOp {
 	var op packetOpProtobuf
-	op.init(direct, params)
+	op.init(params)
 	return &op
 }
 
-func (self *packetOpProtobuf) init(direct bool, params []interface{}) bool {
-	self.direct = direct
+func (self *packetOpProtobuf) init(params []interface{}) bool {
 	return true
 }
 
-func (self *packetOpProtobuf) Operate(input interface{}, output interface{}) (bool, error) {
+func (self *packetOpProtobuf) Operate(direct int8, input interface{}, output interface{}) (bool, error) {
 
-	if self.direct {
+	if direct == interf.Forward {
 		tmpOutput, err := self.Pack(input)
 		if err != nil {
 			fmt.Printf("pack failed. err: %s", err)

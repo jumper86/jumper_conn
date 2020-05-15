@@ -10,6 +10,7 @@ const (
 	PacketJson
 	PacketXml
 	PacketProtobuf
+	PacketBinary
 
 	//压缩
 	CompressGzip
@@ -25,10 +26,15 @@ const (
 	PackageOpMax
 )
 
+const (
+	Forward  int8 = 1 //打包->压缩->加密
+	Backward int8 = 2 //解密->解压->解包
+)
+
 //操作接口
 type Operation interface {
 	//Init(direct bool, params []interface{}) bool //direct 表示操作方向, true　表示　编码/压缩/加密，　false 表示　解码/解压/解密
-	Operate(input interface{}, output interface{}) (bool, error)
+	Operate(direct int8, input interface{}, output interface{}) (bool, error)
 }
 
 type CompressOp interface {
@@ -43,6 +49,11 @@ type EncryptOp interface {
 	Decrypt(data []byte) ([]byte, error)
 }
 
+type Message struct {
+	Type    uint16
+	Content []byte
+}
+
 type PacketOp interface {
 	Operation
 	Pack(originData interface{}) ([]byte, error)
@@ -50,7 +61,7 @@ type PacketOp interface {
 }
 
 type Transform interface {
-	AddOp(opType OperationType, direct bool, params []interface{}) bool
-	Execute(input interface{}, output interface{}) error
+	AddOp(opType OperationType, params []interface{}) bool
+	Execute(direct int8, input interface{}, output interface{}) error
 	Reset()
 }

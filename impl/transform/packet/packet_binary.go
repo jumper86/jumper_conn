@@ -8,29 +8,22 @@ import (
 	"github.com/jumper86/jumper_conn/util"
 )
 
-type Message struct {
-	Type    uint16
-	Content []byte
-}
-
 type packetOpBinary struct {
-	direct bool
 }
 
-func NewpacketOpBinary(direct bool, params []interface{}) interf.PacketOp {
+func NewpacketOpBinary(params []interface{}) interf.PacketOp {
 	var op packetOpBinary
-	op.init(direct, params)
+	op.init(params)
 	return &op
 }
 
-func (self *packetOpBinary) init(direct bool, params []interface{}) bool {
-	self.direct = direct
+func (self *packetOpBinary) init(params []interface{}) bool {
 	return true
 }
 
-func (self *packetOpBinary) Operate(input interface{}, output interface{}) (bool, error) {
+func (self *packetOpBinary) Operate(direct int8, input interface{}, output interface{}) (bool, error) {
 
-	if self.direct {
+	if direct == interf.Forward {
 		tmpOutput, err := self.Pack(input)
 		if err != nil {
 			fmt.Printf("pack failed. err: %s", err)
@@ -54,9 +47,9 @@ func (self *packetOpBinary) Operate(input interface{}, output interface{}) (bool
 //此函数中需要检查入参是否为 string / []byte
 func (*packetOpBinary) Pack(originData interface{}) ([]byte, error) {
 	defer util.TraceLog("packetOpBinary.Pack")()
-	msg, ok := originData.(*Message)
+	msg, ok := originData.(*interf.Message)
 	if !ok {
-		return nil, errors.New("invalid param type, use Message struct.")
+		return nil, errors.New("invalid param type, use interf.Message struct.")
 	}
 
 	rst := make([]byte, len(msg.Content)+2)
@@ -70,10 +63,10 @@ func (*packetOpBinary) Unpack(packData []byte, obj interface{}) error {
 
 	defer util.TraceLog("packetOpBinary.Unpack")()
 
-	var msg *Message
+	var msg *interf.Message
 	var ok bool
-	if msg, ok = obj.(*Message); !ok {
-		return errors.New("invalid param type, use Message struct.")
+	if msg, ok = obj.(*interf.Message); !ok {
+		return errors.New("invalid param type, use interf.Message struct.")
 	}
 
 	msg.Type = binary.BigEndian.Uint16(packData[:2])

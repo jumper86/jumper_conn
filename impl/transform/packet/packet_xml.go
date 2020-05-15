@@ -8,23 +8,21 @@ import (
 )
 
 type packetOpXml struct {
-	direct bool
 }
 
-func NewpacketOpXml(direct bool, params []interface{}) interf.PacketOp {
+func NewpacketOpXml(params []interface{}) interf.PacketOp {
 	var op packetOpXml
-	op.init(direct, params)
+	op.init(params)
 	return &op
 }
 
-func (self *packetOpXml) init(direct bool, params []interface{}) bool {
-	self.direct = direct
+func (self *packetOpXml) init(params []interface{}) bool {
 	return true
 }
 
-func (self *packetOpXml) Operate(input interface{}, output interface{}) (bool, error) {
+func (self *packetOpXml) Operate(direct int8, input interface{}, output interface{}) (bool, error) {
 
-	if self.direct {
+	if direct == interf.Forward {
 		tmpOutput, err := self.Pack(input)
 		if err != nil {
 			fmt.Printf("pack failed. err: %s", err)

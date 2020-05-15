@@ -38,8 +38,11 @@ func NewtcpConn(conn net.Conn, co *ConnOptions, handler interf.Handler) (interf.
 		handler:     handler,
 	}
 
-	rc.run()
 	return rc, nil
+}
+
+func (this *tcpConn) Run() {
+	this.run()
 }
 
 func (this *tcpConn) LocalAddr() net.Addr {
