@@ -151,7 +151,7 @@ func (this *RawConn) close(err error) {
 	this.handler.OnClose(err)
 }
 
-func (this *RawConn) asyncWrite(wg sync.WaitGroup) error {
+func (this *RawConn) asyncWrite(wg *sync.WaitGroup) error {
 
 	wg.Done()
 
@@ -195,7 +195,7 @@ writeLoop:
 	return err
 }
 
-func (this *RawConn) read(wg sync.WaitGroup) {
+func (this *RawConn) read(wg *sync.WaitGroup) {
 
 	wg.Done()
 	var err error
@@ -240,7 +240,8 @@ func (this *RawConn) run() {
 	if this.IsClosed() {
 		return
 	}
-	wg := sync.WaitGroup{}
+	wg := &sync.WaitGroup{}
+	wg.Add(2)
 	go this.read(wg)
 	go this.asyncWrite(wg)
 	wg.Wait()

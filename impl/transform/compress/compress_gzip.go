@@ -39,7 +39,6 @@ func (self *CompressOpGzip) Operate(input interface{}, output interface{}) (bool
 		return true, nil
 	}
 
-	return true, nil
 }
 
 func (self *CompressOpGzip) Compress(data []byte) ([]byte, error) {

@@ -47,7 +47,7 @@ func (*PacketOpBase64) Pack(originData interface{}) ([]byte, error) {
 	//需要判断入参类型为 string 或者 []byte
 	vod := reflect.ValueOf(originData)
 	tod := reflect.TypeOf(originData)
-	if vod.IsValid() == false {
+	if !vod.IsValid() {
 		fmt.Println("originData's value is nil.")
 		return nil, errors.New("originData's value is nil")
 	}

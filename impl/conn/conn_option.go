@@ -18,7 +18,7 @@ const (
 
 	pongWait         = 60
 	pingPeriod       = (pongWait * 9) / 10
-	closeGracePeriod = 10
+	closeGracePeriod = 1
 )
 
 type connOptions struct {

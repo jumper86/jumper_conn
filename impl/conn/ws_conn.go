@@ -114,9 +114,15 @@ func (this *WsConn) setReadLimit() {
 //客户端接收ping, 发送pong, 默认底层处理已经使用回复了pong
 func (this *WsConn) sendPing() {
 	ticker := time.NewTicker(time.Duration(this.pingPeriod))
-	for _ = range ticker.C {
-		this.conn.WriteControl(websocket.PingMessage, nil,
-			time.Now().Add(time.Duration(this.writeTimeout)*time.Second))
+
+	for {
+		select {
+		case <-this.closeChan:
+			return
+		case <-ticker.C:
+			this.conn.WriteControl(websocket.PingMessage, nil,
+				time.Now().Add(time.Duration(this.writeTimeout)*time.Second))
+		}
 	}
 
 }
@@ -151,6 +157,7 @@ func (this *WsConn) close(err error) {
 	if err == nil || err == cst.ErrConnClosed {
 		content := websocket.FormatCloseMessage(websocket.CloseNormalClosure, "byebye.")
 		this.conn.WriteMessage(websocket.CloseMessage, content)
+		time.Sleep(time.Duration(this.closeGracePeriod) * time.Second)
 	}
 	this.conn.Close()
 
@@ -158,7 +165,7 @@ func (this *WsConn) close(err error) {
 
 }
 
-func (this *WsConn) asyncWrite(wg sync.WaitGroup) error {
+func (this *WsConn) asyncWrite(wg *sync.WaitGroup) error {
 
 	wg.Done()
 
@@ -196,7 +203,7 @@ readLoop:
 	return err
 }
 
-func (this *WsConn) read(wg sync.WaitGroup) error {
+func (this *WsConn) read(wg *sync.WaitGroup) error {
 
 	wg.Done()
 
@@ -239,11 +246,12 @@ func (this *WsConn) run() {
 
 	this.setReadLimit()
 	if this.side == ServerSide {
-		this.sendPing()
+		go this.sendPing()
 		this.handlePong()
 	}
 
-	wg := sync.WaitGroup{}
+	wg := &sync.WaitGroup{}
+	wg.Add(2)
 	go this.read(wg)
 	go this.asyncWrite(wg)
 	wg.Done()

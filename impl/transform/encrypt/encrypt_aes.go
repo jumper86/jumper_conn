@@ -60,7 +60,6 @@ func (self *EncryptOpAes) Operate(input interface{}, output interface{}) (bool, 
 		return true, nil
 	}
 
-	return true, nil
 }
 
 func (self *EncryptOpAes) Encrypt(data []byte) ([]byte, error) {
