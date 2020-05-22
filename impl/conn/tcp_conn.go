@@ -2,6 +2,7 @@ package conn
 
 import (
 	"encoding/binary"
+	"fmt"
 	"io"
 	"net"
 	"sync"
@@ -35,6 +36,7 @@ func NewtcpConn(conn net.Conn, co *ConnOptions, handler interf.Handler) (interf.
 		writeBuffer: make(chan []byte, co.asyncWriteSize),
 		closeChan:   make(chan struct{}),
 		ConnOptions: *co,
+		ctx:         make(map[string]interface{}),
 		handler:     handler,
 	}
 
@@ -152,6 +154,9 @@ func (this *tcpConn) close(err error) {
 	this.conn.Close()
 
 	this.handler.OnClose(err)
+
+	this.ctx = nil
+	this.handler = nil
 }
 
 func (this *tcpConn) asyncWrite(wg *sync.WaitGroup) error {
@@ -198,10 +203,9 @@ writeLoop:
 	return err
 }
 
-func (this *tcpConn) read(wg *sync.WaitGroup) {
+func (this *tcpConn) read(wg *sync.WaitGroup) (err error) {
 
 	wg.Done()
-	var err error
 readLoop:
 	for {
 		select {
@@ -212,7 +216,7 @@ readLoop:
 
 			this.setReadDeadline(this.readTimeout)
 
-			length := make([]byte, 4)
+			length := make([]byte, cst.TcpHeadSize)
 			_, err = io.ReadFull(this.conn, length)
 			if err != nil {
 				break readLoop
@@ -245,7 +249,18 @@ func (this *tcpConn) run() {
 	}
 	wg := &sync.WaitGroup{}
 	wg.Add(2)
-	go this.read(wg)
-	go this.asyncWrite(wg)
+	go func() {
+		err := this.read(wg)
+		if err != nil {
+			fmt.Printf("stop read , err: %s\n", err)
+		}
+	}()
+	go func() {
+		err := this.asyncWrite(wg)
+		if err != nil {
+			fmt.Printf("stop async write , err: %s\n", err)
+		}
+	}()
+
 	wg.Wait()
 }

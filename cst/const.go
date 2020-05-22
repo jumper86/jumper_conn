@@ -15,3 +15,7 @@ const (
 	PingPeriod       = (PongWait * 9) / 10
 	CloseGracePeriod = 1
 )
+
+const (
+	TcpHeadSize = 4
+)

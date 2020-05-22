@@ -19,8 +19,8 @@ type wsConn struct {
 	writeBuffer chan []byte
 	closeChan   chan struct{}
 
-	handler interf.Handler
 	ctx     map[string]interface{}
+	handler interf.Handler
 }
 
 func NewwsConn(conn *websocket.Conn, co *ConnOptions, handler interf.Handler) (interf.Conn, error) {
@@ -34,6 +34,7 @@ func NewwsConn(conn *websocket.Conn, co *ConnOptions, handler interf.Handler) (i
 		writeBuffer: make(chan []byte, co.asyncWriteSize),
 		closeChan:   make(chan struct{}),
 		ConnOptions: *co,
+		ctx:         make(map[string]interface{}),
 		handler:     handler,
 	}
 
@@ -165,6 +166,9 @@ func (this *wsConn) close(err error) {
 	this.conn.Close()
 
 	this.handler.OnClose(err)
+
+	this.ctx = nil
+	this.handler = nil
 
 }
 
