@@ -3,7 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/jumper86/jumper_conn/cst"
+	"github.com/jumper86/jumper_conn/def"
 	jc "github.com/jumper86/jumper_conn/impl/conn"
 	jt "github.com/jumper86/jumper_conn/impl/transform/transform"
 	"github.com/jumper86/jumper_conn/interf"
@@ -31,8 +31,8 @@ func main() {
 		go func(c net.Conn) {
 			var h Handler
 			ts := jt.Newtransform()
-			ts.AddOp(interf.PacketBinary, nil)
-			tcpOp := jc.NewtcpConnOptions(cst.ServerSide, cst.MaxMsgSize, cst.ReadTimeout, cst.WriteTimeout, cst.AsyncWriteSize)
+			ts.AddOp(def.PacketBinary, nil)
+			tcpOp := jc.NewtcpConnOptions(def.ServerSide, def.MaxMsgSize, def.ReadTimeout, def.WriteTimeout, def.AsyncWriteSize)
 			jconn, err := jc.NewtcpConn(c, tcpOp, &h)
 			if err != nil {
 				fmt.Printf("new tcp conn failed. err: %s\n", err)
@@ -74,7 +74,7 @@ func (this *Handler) OnMessage(data []byte) error {
 	util.TraceLog("handler.OnMessage")
 	fmt.Printf("handler get data: %v\n", data)
 	var msg interf.Message
-	err := this.Execute(interf.Backward, data, &msg)
+	err := this.Execute(def.Backward, data, &msg)
 	if err != nil {
 		fmt.Printf("transform failed, err: %s\n", err)
 		return err

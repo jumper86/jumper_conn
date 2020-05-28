@@ -21,3 +21,6 @@ type Conn interface {
 
 	Run()
 }
+
+type ConnOptionInterf interface {
+}

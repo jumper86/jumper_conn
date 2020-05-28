@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
+	"github.com/jumper86/jumper_conn/def"
 	"github.com/jumper86/jumper_conn/interf"
 	"github.com/jumper86/jumper_conn/util"
 	"io"
@@ -45,7 +46,7 @@ func (self *encryptOpAes) init(params []interface{}) bool {
 
 func (self *encryptOpAes) Operate(direct int8, input interface{}, output interface{}) (bool, error) {
 
-	if direct == interf.Forward {
+	if direct == def.Forward {
 		tmpOutput, err := self.Encrypt(input.([]byte))
 		if err != nil {
 			fmt.Printf("pack failed. err: %s", err)

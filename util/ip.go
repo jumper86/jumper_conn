@@ -6,13 +6,13 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/jumper86/jumper_conn/cst"
+	"github.com/jumper86/jumper_conn/def"
 )
 
 func GetExternalIp() (string, error) {
 	rsp, err := http.Get("http://myexternalip.com/raw")
 	if err != nil {
-		return "", cst.ErrGetExternalIp
+		return "", def.ErrGetExternalIp
 	}
 	ipbytes, err := ioutil.ReadAll(rsp.Body)
 	if err != nil {

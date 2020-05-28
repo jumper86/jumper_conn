@@ -9,7 +9,7 @@ import (
 	"github.com/jumper86/jumper_conn/interf"
 
 	"github.com/gorilla/websocket"
-	"github.com/jumper86/jumper_conn/cst"
+	"github.com/jumper86/jumper_conn/def"
 )
 
 type wsConn struct {
@@ -68,7 +68,7 @@ func (this *wsConn) IsClosed() bool {
 func (this *wsConn) Write(data []byte) error {
 	closed := this.IsClosed()
 	if closed {
-		return cst.ErrConnClosed
+		return def.ErrConnClosed
 	}
 
 	this.setWriteDeadline(this.writeTimeout)
@@ -81,12 +81,12 @@ func (this *wsConn) Write(data []byte) error {
 func (this *wsConn) AsyncWrite(data []byte) (err error) {
 	closed := this.IsClosed()
 	if closed {
-		return cst.ErrConnClosed
+		return def.ErrConnClosed
 	}
 
 	defer func() {
 		if panicErr := recover(); panicErr != nil {
-			err = cst.ErrConnClosed
+			err = def.ErrConnClosed
 		}
 	}()
 
@@ -154,11 +154,10 @@ func (this *wsConn) close(err error) {
 		return
 	}
 
-	//todo: 释放资源
 	close(this.closeChan)
 	close(this.writeBuffer)
 
-	if err == nil || err == cst.ErrConnClosed {
+	if err == nil || err == def.ErrConnClosed {
 		content := websocket.FormatCloseMessage(websocket.CloseNormalClosure, "byebye.")
 		this.conn.WriteMessage(websocket.CloseMessage, content)
 		time.Sleep(time.Duration(this.closeGracePeriod) * time.Second)
@@ -181,12 +180,12 @@ readLoop:
 	for {
 		select {
 		case <-this.closeChan:
-			err = cst.ErrConnClosed
+			err = def.ErrConnClosed
 			break readLoop
 
 		case data, ok := <-this.writeBuffer:
 			if !ok {
-				err = cst.ErrConnClosed
+				err = def.ErrConnClosed
 				break readLoop
 			}
 
@@ -195,9 +194,9 @@ readLoop:
 			err = this.conn.WriteMessage(websocket.TextMessage, data)
 			if err != nil {
 				if websocket.IsCloseError(err, websocket.CloseNormalClosure) {
-					err = cst.ErrConnClosed
+					err = def.ErrConnClosed
 				} else {
-					err = cst.ErrConnUnexpectedClosed
+					err = def.ErrConnUnexpectedClosed
 				}
 				break readLoop
 			}
@@ -220,14 +219,14 @@ readLoop:
 	for {
 		select {
 		case <-this.closeChan:
-			err = cst.ErrConnClosed
+			err = def.ErrConnClosed
 			break readLoop
 		default:
 			this.setReadDeadline(this.readTimeout)
 			_, msg, err := this.conn.ReadMessage()
 			if err != nil {
 				if websocket.IsCloseError(err, websocket.CloseNormalClosure) {
-					err = cst.ErrConnClosed
+					err = def.ErrConnClosed
 				}
 				break readLoop
 			}
@@ -252,7 +251,7 @@ func (this *wsConn) run() {
 	}
 
 	this.setReadLimit()
-	if this.side == cst.ServerSide {
+	if this.side == def.ServerSide {
 		go this.sendPing()
 		this.handlePong()
 	}

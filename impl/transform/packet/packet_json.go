@@ -3,6 +3,7 @@ package packet
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/jumper86/jumper_conn/def"
 	"github.com/jumper86/jumper_conn/interf"
 	"github.com/jumper86/jumper_conn/util"
 )
@@ -22,7 +23,7 @@ func (self *packetOpJson) init(params []interface{}) bool {
 
 func (self *packetOpJson) Operate(direct int8, input interface{}, output interface{}) (bool, error) {
 
-	if direct == interf.Forward {
+	if direct == def.Forward {
 		tmpOutput, err := self.Pack(input)
 		if err != nil {
 			fmt.Printf("pack failed. err: %s", err)

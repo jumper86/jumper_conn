@@ -3,13 +3,14 @@ package main
 import (
 	"encoding/binary"
 	"fmt"
-	"github.com/jumper86/jumper_conn/cst"
+	"net"
+	"sync"
+
+	"github.com/jumper86/jumper_conn/def"
 	jc "github.com/jumper86/jumper_conn/impl/conn"
 	jt "github.com/jumper86/jumper_conn/impl/transform/transform"
 	"github.com/jumper86/jumper_conn/interf"
 	"github.com/jumper86/jumper_conn/util"
-	"net"
-	"sync"
 )
 
 const addr = "localhost:8801"
@@ -33,8 +34,8 @@ func main() {
 
 		var h Handler
 		ts := jt.Newtransform()
-		ts.AddOp(interf.PacketBinary, nil)
-		tcpOp := jc.NewtcpConnOptions(cst.ClientSide, cst.MaxMsgSize, cst.ReadTimeout, cst.WriteTimeout, cst.AsyncWriteSize)
+		ts.AddOp(def.PacketBinary, nil)
+		tcpOp := jc.NewtcpConnOptions(def.ClientSide, def.MaxMsgSize, def.ReadTimeout, def.WriteTimeout, def.AsyncWriteSize)
 		jconn, err := jc.NewtcpConn(c, tcpOp, &h)
 		if err != nil {
 			fmt.Printf("new tcp conn failed. err: %s\n", err)
@@ -53,7 +54,7 @@ func main() {
 		}
 
 		var output []byte
-		err = h.Execute(interf.Forward, msg, &output)
+		err = h.Execute(def.Forward, msg, &output)
 		if err != nil {
 			fmt.Printf("transform failed, err: %s\n", err)
 			return
@@ -63,7 +64,7 @@ func main() {
 		head := make([]byte, 4)
 		binary.BigEndian.PutUint32(head, uint32(length))
 
-		sendMsg := make([]byte, 0, cst.TcpHeadSize+length)
+		sendMsg := make([]byte, 0, def.TcpHeadSize+length)
 		sendMsg = append(sendMsg, head...)
 		sendMsg = append(sendMsg, output...)
 

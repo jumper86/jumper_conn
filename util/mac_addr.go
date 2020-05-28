@@ -3,13 +3,13 @@ package util
 import (
 	"net"
 
-	"github.com/jumper86/jumper_conn/cst"
+	"github.com/jumper86/jumper_conn/def"
 )
 
 func GetMacAddr() (string, error) {
 	inters, err := net.Interfaces()
 	if err != nil {
-		return "", cst.ErrGetMacAddr
+		return "", def.ErrGetMacAddr
 	}
 
 	for _, inter := range inters {
@@ -25,7 +25,7 @@ func GetMacAddr() (string, error) {
 func GetMacAddrs() ([]string, error) {
 	inters, err := net.Interfaces()
 	if err != nil {
-		return nil, cst.ErrGetMacAddr
+		return nil, def.ErrGetMacAddr
 	}
 
 	macAddrs := make([]string, 0)

@@ -23,7 +23,7 @@ func (self *encryptOpMd5) init(params []interface{}) bool {
 
 func (self *encryptOpMd5) Operate(direct int8, input interface{}, output interface{}) (bool, error) {
 
-	if direct == interf.Forward {
+	if direct == def.Forward {
 		tmpOutput, err := self.Encrypt(input.([]byte))
 		if err != nil {
 			fmt.Printf("pack failed. err: %s", err)

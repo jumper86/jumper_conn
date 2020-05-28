@@ -11,7 +11,7 @@ import (
 
 	"github.com/jumper86/jumper_conn/interf"
 
-	"github.com/jumper86/jumper_conn/cst"
+	"github.com/jumper86/jumper_conn/def"
 )
 
 type tcpConn struct {
@@ -69,7 +69,7 @@ func (this *tcpConn) IsClosed() bool {
 func (this *tcpConn) Write(data []byte) error {
 	closed := this.IsClosed()
 	if closed {
-		return cst.ErrConnClosed
+		return def.ErrConnClosed
 	}
 
 	this.setWriteDeadline(this.writeTimeout)
@@ -98,13 +98,13 @@ func (this *tcpConn) AsyncWrite(data []byte) (err error) {
 
 	closed := this.IsClosed()
 	if closed {
-		return cst.ErrConnClosed
+		return def.ErrConnClosed
 	}
 
 	defer func() {
 		if panicErr := recover(); panicErr != nil {
-			//todo: 接收并且处理下面writeBuffer 写入之前已经关闭导致的panic
-			err = cst.ErrConnClosed
+			//note: 接收并且处理下面writeBuffer 写入之前已经关闭导致的panic
+			err = def.ErrConnClosed
 			return
 		}
 	}()
@@ -147,7 +147,7 @@ func (this *tcpConn) close(err error) {
 	if !swapped {
 		return
 	}
-	//todo: clean resource
+
 	close(this.closeChan)
 	close(this.writeBuffer)
 
@@ -170,11 +170,11 @@ writeLoop:
 	for {
 		select {
 		case <-this.closeChan:
-			err = cst.ErrConnClosed
+			err = def.ErrConnClosed
 			break writeLoop
 		case data, ok := <-this.writeBuffer:
 			if !ok {
-				err = cst.ErrConnClosed
+				err = def.ErrConnClosed
 				break writeLoop
 			}
 
@@ -210,13 +210,13 @@ readLoop:
 	for {
 		select {
 		case <-this.closeChan:
-			err = cst.ErrConnClosed
+			err = def.ErrConnClosed
 			break readLoop
 		default:
 
 			this.setReadDeadline(this.readTimeout)
 
-			length := make([]byte, cst.TcpHeadSize)
+			length := make([]byte, def.TcpHeadSize)
 			_, err = io.ReadFull(this.conn, length)
 			if err != nil {
 				break readLoop
