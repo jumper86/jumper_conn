@@ -1,4 +1,4 @@
-package main
+package jumper_conn
 
 import (
 	"github.com/jumper86/jumper_conn/impl/transform/transform"

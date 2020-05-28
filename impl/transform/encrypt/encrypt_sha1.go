@@ -4,6 +4,8 @@ import (
 	"crypto/sha1"
 	"errors"
 	"fmt"
+
+	"github.com/jumper86/jumper_conn/def"
 	"github.com/jumper86/jumper_conn/interf"
 	"github.com/jumper86/jumper_conn/util"
 )

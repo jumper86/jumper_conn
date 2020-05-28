@@ -1,4 +1,4 @@
-package main
+package jumper_conn
 
 import (
 	"net"

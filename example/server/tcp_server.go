@@ -3,13 +3,13 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/jumper86/jumper_conn/def"
-	jc "github.com/jumper86/jumper_conn/impl/conn"
-	jt "github.com/jumper86/jumper_conn/impl/transform/transform"
-	"github.com/jumper86/jumper_conn/interf"
-	"github.com/jumper86/jumper_conn/util"
 	"net"
 	"time"
+
+	"github.com/jumper86/jumper_conn"
+	"github.com/jumper86/jumper_conn/def"
+	"github.com/jumper86/jumper_conn/interf"
+	"github.com/jumper86/jumper_conn/util"
 )
 
 const addr = "localhost:8801"
@@ -30,10 +30,10 @@ func main() {
 
 		go func(c net.Conn) {
 			var h Handler
-			ts := jt.Newtransform()
+			ts := jumper_conn.Newtransform()
 			ts.AddOp(def.PacketBinary, nil)
-			tcpOp := jc.NewtcpConnOptions(def.ServerSide, def.MaxMsgSize, def.ReadTimeout, def.WriteTimeout, def.AsyncWriteSize)
-			jconn, err := jc.NewtcpConn(c, tcpOp, &h)
+			tcpOp := jumper_conn.NewtcpConnOptions(def.ServerSide, def.MaxMsgSize, def.ReadTimeout, def.WriteTimeout, def.AsyncWriteSize)
+			jconn, err := jumper_conn.NewtcpConn(c, tcpOp, &h)
 			if err != nil {
 				fmt.Printf("new tcp conn failed. err: %s\n", err)
 				return
@@ -71,7 +71,7 @@ func (this *Handler) Init(conn interf.Conn, ts interf.Transform) {
 }
 
 func (this *Handler) OnMessage(data []byte) error {
-	util.TraceLog("handler.OnMessage")
+	defer util.TraceLog("handler.OnMessage")()
 	fmt.Printf("handler get data: %v\n", data)
 	var msg interf.Message
 	err := this.Execute(def.Backward, data, &msg)
@@ -89,11 +89,12 @@ func (this *Handler) OnMessage(data []byte) error {
 
 	fmt.Printf("type: %d, content: %s\n", msg.Type, msg.Content)
 
-	time.Sleep(5 * time.Second)
+	time.Sleep(1 * time.Second)
 	this.Close()
+
 	return nil
 }
 
 func (this *Handler) OnClose(err error) {
-	util.TraceLog("handler.OnClose")
+	defer util.TraceLog("handler.OnClose")()
 }

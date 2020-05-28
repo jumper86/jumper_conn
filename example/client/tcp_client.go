@@ -6,9 +6,8 @@ import (
 	"net"
 	"sync"
 
+	"github.com/jumper86/jumper_conn"
 	"github.com/jumper86/jumper_conn/def"
-	jc "github.com/jumper86/jumper_conn/impl/conn"
-	jt "github.com/jumper86/jumper_conn/impl/transform/transform"
 	"github.com/jumper86/jumper_conn/interf"
 	"github.com/jumper86/jumper_conn/util"
 )
@@ -33,10 +32,10 @@ func main() {
 		}()
 
 		var h Handler
-		ts := jt.Newtransform()
+		ts := jumper_conn.Newtransform()
 		ts.AddOp(def.PacketBinary, nil)
-		tcpOp := jc.NewtcpConnOptions(def.ClientSide, def.MaxMsgSize, def.ReadTimeout, def.WriteTimeout, def.AsyncWriteSize)
-		jconn, err := jc.NewtcpConn(c, tcpOp, &h)
+		tcpOp := jumper_conn.NewtcpConnOptions(def.ClientSide, def.MaxMsgSize, def.ReadTimeout, def.WriteTimeout, def.AsyncWriteSize)
+		jconn, err := jumper_conn.NewtcpConn(c, tcpOp, &h)
 		if err != nil {
 			fmt.Printf("new tcp conn failed. err: %s\n", err)
 			return
