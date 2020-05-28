@@ -13,27 +13,24 @@ import (
 )
 
 type wsConn struct {
-	ConnOptions
-	conn        *websocket.Conn
 	closed      int32
 	writeBuffer chan []byte
 	closeChan   chan struct{}
+	ctx         map[string]interface{}
 
-	ctx     map[string]interface{}
+	conn    *websocket.Conn
+	co      interf.ConnOptionsInterf
 	handler interf.Handler
 }
 
-func NewwsConn(conn *websocket.Conn, co *ConnOptions, handler interf.Handler) (interf.Conn, error) {
-	err := checkOp(co, handler)
-	if err != nil {
-		return nil, err
-	}
+func CreatewsConn(conn *websocket.Conn, co interf.ConnOptionsInterf, handler interf.Handler) (interf.Conn, error) {
+
 	rc := &wsConn{
 		conn:        conn,
 		closed:      0,
-		writeBuffer: make(chan []byte, co.asyncWriteSize),
+		writeBuffer: make(chan []byte, co.GetAsyncWriteSize()),
 		closeChan:   make(chan struct{}),
-		ConnOptions: *co,
+		co:          co,
 		ctx:         make(map[string]interface{}),
 		handler:     handler,
 	}
@@ -71,7 +68,7 @@ func (this *wsConn) Write(data []byte) error {
 		return def.ErrConnClosed
 	}
 
-	this.setWriteDeadline(this.writeTimeout)
+	this.setWriteDeadline(this.co.GetWriteTimeout())
 	defer this.setWriteDeadline(0)
 
 	err := this.conn.WriteMessage(websocket.TextMessage, data)
@@ -111,13 +108,13 @@ func (this *wsConn) Del(key string) {
 ////////////////////////////////////////////////////////////// impl
 //服务端和客户端都需要
 func (this *wsConn) setReadLimit() {
-	this.conn.SetReadLimit(this.maxMsgSize)
+	this.conn.SetReadLimit(this.co.GetMaxMsgSize())
 }
 
 //服务端发送ping, 接收pong
 //客户端接收ping, 发送pong, 默认底层处理已经使用回复了pong
 func (this *wsConn) sendPing() {
-	ticker := time.NewTicker(time.Duration(this.pingPeriod))
+	ticker := time.NewTicker(time.Duration(this.co.GetPingPeriod()))
 
 	for {
 		select {
@@ -125,7 +122,7 @@ func (this *wsConn) sendPing() {
 			return
 		case <-ticker.C:
 			this.conn.WriteControl(websocket.PingMessage, nil,
-				time.Now().Add(time.Duration(this.writeTimeout)*time.Second))
+				time.Now().Add(time.Duration(this.co.GetWriteTimeout())*time.Second))
 		}
 	}
 
@@ -133,18 +130,18 @@ func (this *wsConn) sendPing() {
 
 func (this *wsConn) handlePong() {
 	this.conn.SetPongHandler(func(appData string) error {
-		return this.conn.SetReadDeadline(time.Now().Add(time.Duration(this.pongWait) * time.Second))
+		return this.conn.SetReadDeadline(time.Now().Add(time.Duration(this.co.GetPongWait()) * time.Second))
 	})
 }
 
 func (this *wsConn) setWriteDeadline(timeout int64) {
-	if this.writeTimeout > 0 {
+	if this.co.GetWriteTimeout() > 0 {
 		this.conn.SetWriteDeadline(time.Now().Add(time.Duration(timeout) * time.Second))
 	}
 }
 
 func (this *wsConn) setReadDeadline(timeout int64) {
-	if this.readTimeout > 0 {
+	if this.co.GetReadTimeout() > 0 {
 		this.conn.SetReadDeadline(time.Now().Add(time.Duration(timeout) * time.Second))
 	}
 }
@@ -160,7 +157,7 @@ func (this *wsConn) close(err error) {
 	if err == nil || err == def.ErrConnClosed {
 		content := websocket.FormatCloseMessage(websocket.CloseNormalClosure, "byebye.")
 		this.conn.WriteMessage(websocket.CloseMessage, content)
-		time.Sleep(time.Duration(this.closeGracePeriod) * time.Second)
+		time.Sleep(time.Duration(this.co.GetCloseGracePeriod()) * time.Second)
 	}
 	this.conn.Close()
 
@@ -189,7 +186,7 @@ readLoop:
 				break readLoop
 			}
 
-			this.setWriteDeadline(this.writeTimeout)
+			this.setWriteDeadline(this.co.GetWriteTimeout())
 
 			err = this.conn.WriteMessage(websocket.TextMessage, data)
 			if err != nil {
@@ -222,7 +219,7 @@ readLoop:
 			err = def.ErrConnClosed
 			break readLoop
 		default:
-			this.setReadDeadline(this.readTimeout)
+			this.setReadDeadline(this.co.GetReadTimeout())
 			_, msg, err := this.conn.ReadMessage()
 			if err != nil {
 				if websocket.IsCloseError(err, websocket.CloseNormalClosure) {
@@ -251,7 +248,7 @@ func (this *wsConn) run() {
 	}
 
 	this.setReadLimit()
-	if this.side == def.ServerSide {
+	if this.co.GetSide() == def.ServerSide {
 		go this.sendPing()
 		this.handlePong()
 	}

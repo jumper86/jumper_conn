@@ -15,27 +15,23 @@ import (
 )
 
 type tcpConn struct {
-	ConnOptions
-	conn        net.Conn
 	closed      int32
 	writeBuffer chan []byte
 	closeChan   chan struct{}
 
 	ctx     map[string]interface{}
+	conn    net.Conn
 	handler interf.Handler
+	co      interf.ConnOptionsInterf
 }
 
-func NewtcpConn(conn net.Conn, co *ConnOptions, handler interf.Handler) (interf.Conn, error) {
-	err := checkOp(co, handler)
-	if err != nil {
-		return nil, err
-	}
+func CreatetcpConn(conn net.Conn, co interf.ConnOptionsInterf, handler interf.Handler) (interf.Conn, error) {
 	rc := &tcpConn{
 		conn:        conn,
 		closed:      0,
-		writeBuffer: make(chan []byte, co.asyncWriteSize),
+		writeBuffer: make(chan []byte, co.GetAsyncWriteSize()),
 		closeChan:   make(chan struct{}),
-		ConnOptions: *co,
+		co:          co,
 		ctx:         make(map[string]interface{}),
 		handler:     handler,
 	}
@@ -72,7 +68,7 @@ func (this *tcpConn) Write(data []byte) error {
 		return def.ErrConnClosed
 	}
 
-	this.setWriteDeadline(this.writeTimeout)
+	this.setWriteDeadline(this.co.GetWriteTimeout())
 	defer this.setWriteDeadline(0)
 
 	length := len(data)
@@ -131,13 +127,13 @@ func (this *tcpConn) Del(key string) {
 ////////////////////////////////////////////////////////////// impl
 
 func (this *tcpConn) setWriteDeadline(timeout int64) {
-	if this.writeTimeout > 0 {
+	if this.co.GetWriteTimeout() > 0 {
 		this.conn.SetWriteDeadline(time.Now().Add(time.Duration(timeout) * time.Second))
 	}
 }
 
 func (this *tcpConn) setReadDeadline(timeout int64) {
-	if this.readTimeout > 0 {
+	if this.co.GetReadTimeout() > 0 {
 		this.conn.SetReadDeadline(time.Now().Add(time.Duration(timeout) * time.Second))
 	}
 }
@@ -183,7 +179,7 @@ writeLoop:
 
 			for {
 
-				this.setWriteDeadline(this.writeTimeout)
+				this.setWriteDeadline(this.co.GetWriteTimeout())
 				l, err = this.conn.Write(data[written:])
 				this.setWriteDeadline(0)
 
@@ -214,7 +210,7 @@ readLoop:
 			break readLoop
 		default:
 
-			this.setReadDeadline(this.readTimeout)
+			this.setReadDeadline(this.co.GetReadTimeout())
 
 			length := make([]byte, def.TcpHeadSize)
 			_, err = io.ReadFull(this.conn, length)
