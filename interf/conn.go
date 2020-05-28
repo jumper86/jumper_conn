@@ -21,16 +21,3 @@ type Conn interface {
 
 	Run()
 }
-
-type ConnOptionsInterf interface {
-	GetMaxMsgSize() int64
-	GetReadTimeout() int64
-	GetWriteTimeout() int64
-	GetAsyncWriteSize() int64
-	GetSide() int8
-	GetPongWait() int64
-	GetPingPeriod() int64
-	GetCloseGracePeriod() int64
-
-	CheckValid() error
-}

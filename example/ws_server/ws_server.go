@@ -3,60 +3,66 @@ package main
 import (
 	"errors"
 	"fmt"
-	"net"
+	"net/http"
 	"time"
 
-	"github.com/jumper86/jumper_conn"
-	"github.com/jumper86/jumper_conn/def"
 	"github.com/jumper86/jumper_conn/interf"
 	"github.com/jumper86/jumper_conn/util"
+
+	"github.com/jumper86/jumper_conn"
+
+	"github.com/gorilla/websocket"
+	"github.com/jumper86/jumper_conn/def"
 )
 
 const addr = "localhost:8801"
 
+var upgrader = websocket.Upgrader{}
+
 func main() {
-	listener, err := net.Listen("tcp", addr)
+	http.HandleFunc("/ws_connect", ws_connect)
+	err := http.ListenAndServe(addr, nil)
 	if err != nil {
-		fmt.Printf("listen failed, err: %s\n", err)
+		fmt.Printf("listen and serve failed, err: %s\n", err)
+		return
+	}
+}
+
+//
+func ws_connect(w http.ResponseWriter, r *http.Request) {
+
+	wsOp := def.ConnOptions{
+		MaxMsgSize:     def.MaxMsgSize,
+		ReadTimeout:    def.ReadTimeout,
+		WriteTimeout:   def.WriteTimeout,
+		AsyncWriteSize: def.AsyncWriteSize,
+		Side:           def.ServerSide,
+
+		PingPeriod:       def.PingPeriod,
+		PongWait:         def.PongWait,
+		CloseGracePeriod: def.CloseGracePeriod,
+	}
+
+	wsConn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		fmt.Printf("err: %s\n", err)
 		return
 	}
 
-	for {
-		conn, err := listener.Accept()
-		if err != nil {
-			fmt.Printf("accept failed, err: %s\n", err)
-			return
-		}
+	var h Handler
+	ts := jumper_conn.Newtransform()
+	ts.AddOp(def.PacketJson, nil)
 
-		go func(c net.Conn) {
-			var h Handler
-			ts := jumper_conn.Newtransform()
-			ts.AddOp(def.PacketBinary, nil)
-			tcpOp := jumper_conn.NewtcpConnOptions(def.ServerSide, def.MaxMsgSize, def.ReadTimeout, def.WriteTimeout, def.AsyncWriteSize)
-			jconn, err := jumper_conn.NewtcpConn(c, tcpOp, &h)
-			if err != nil {
-				fmt.Printf("new tcp conn failed. err: %s\n", err)
-				return
-			}
-			h.Init(jconn, ts)
-
-			fmt.Printf("local addr: %s, remote addr: %s\n", jconn.LocalAddr(), jconn.RemoteAddr())
-
-			//GetConn() net.Conn
-			//Close()
-			//IsClosed() bool
-			//
-			//Write(data []byte) error
-			//AsyncWrite(data []byte) error
-			//
-			//
-			//Set(string, interface{})
-			//Get(string) interface{}
-			//Del(string)
-			h.Set("radom_num", int(10000))
-
-		}(conn)
+	jconn, err := jumper_conn.NewwsConn(wsConn, &wsOp, &h)
+	if err != nil {
+		return
 	}
+
+	h.Init(jconn, ts)
+
+	fmt.Printf("local addr: %s, remote addr: %s\n", jconn.LocalAddr(), jconn.RemoteAddr())
+
+	h.Set("radom_num", int(10000))
 }
 
 type Handler struct {

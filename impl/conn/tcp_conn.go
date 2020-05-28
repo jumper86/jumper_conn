@@ -22,14 +22,20 @@ type tcpConn struct {
 	ctx     map[string]interface{}
 	conn    net.Conn
 	handler interf.Handler
-	co      interf.ConnOptionsInterf
+	co      *def.ConnOptions
 }
 
-func CreatetcpConn(conn net.Conn, co interf.ConnOptionsInterf, handler interf.Handler) (interf.Conn, error) {
+func CreatetcpConn(conn net.Conn, co *def.ConnOptions, handler interf.Handler) (interf.Conn, error) {
+
+	err := co.CheckValid()
+	if err != nil {
+		return nil, err
+	}
+
 	rc := &tcpConn{
 		conn:        conn,
 		closed:      0,
-		writeBuffer: make(chan []byte, co.GetAsyncWriteSize()),
+		writeBuffer: make(chan []byte, co.AsyncWriteSize),
 		closeChan:   make(chan struct{}),
 		co:          co,
 		ctx:         make(map[string]interface{}),
@@ -68,7 +74,7 @@ func (this *tcpConn) Write(data []byte) error {
 		return def.ErrConnClosed
 	}
 
-	this.setWriteDeadline(this.co.GetWriteTimeout())
+	this.setWriteDeadline(this.co.WriteTimeout)
 	defer this.setWriteDeadline(0)
 
 	length := len(data)
@@ -127,13 +133,13 @@ func (this *tcpConn) Del(key string) {
 ////////////////////////////////////////////////////////////// impl
 
 func (this *tcpConn) setWriteDeadline(timeout int64) {
-	if this.co.GetWriteTimeout() > 0 {
+	if this.co.WriteTimeout > 0 {
 		this.conn.SetWriteDeadline(time.Now().Add(time.Duration(timeout) * time.Second))
 	}
 }
 
 func (this *tcpConn) setReadDeadline(timeout int64) {
-	if this.co.GetReadTimeout() > 0 {
+	if this.co.ReadTimeout > 0 {
 		this.conn.SetReadDeadline(time.Now().Add(time.Duration(timeout) * time.Second))
 	}
 }
@@ -179,7 +185,7 @@ writeLoop:
 
 			for {
 
-				this.setWriteDeadline(this.co.GetWriteTimeout())
+				this.setWriteDeadline(this.co.WriteTimeout)
 				l, err = this.conn.Write(data[written:])
 				this.setWriteDeadline(0)
 
@@ -210,7 +216,7 @@ readLoop:
 			break readLoop
 		default:
 
-			this.setReadDeadline(this.co.GetReadTimeout())
+			this.setReadDeadline(this.co.ReadTimeout)
 
 			length := make([]byte, def.TcpHeadSize)
 			_, err = io.ReadFull(this.conn, length)

@@ -34,8 +34,16 @@ func main() {
 		var h Handler
 		ts := jumper_conn.Newtransform()
 		ts.AddOp(def.PacketBinary, nil)
-		tcpOp := jumper_conn.NewtcpConnOptions(def.ClientSide, def.MaxMsgSize, def.ReadTimeout, def.WriteTimeout, def.AsyncWriteSize)
-		jconn, err := jumper_conn.NewtcpConn(c, tcpOp, &h)
+
+		tcpOp := def.ConnOptions{
+			MaxMsgSize:     def.MaxMsgSize,
+			ReadTimeout:    def.ReadTimeout,
+			WriteTimeout:   def.WriteTimeout,
+			AsyncWriteSize: def.AsyncWriteSize,
+			Side:           def.ClientSide,
+		}
+
+		jconn, err := jumper_conn.NewtcpConn(c, &tcpOp, &h)
 		if err != nil {
 			fmt.Printf("new tcp conn failed. err: %s\n", err)
 			return
@@ -45,7 +53,7 @@ func main() {
 		fmt.Printf("local addr: %s, remote addr: %s\n", jconn.LocalAddr(), jconn.RemoteAddr())
 
 		//send hello
-		state := fmt.Sprintf("this is client %s, hello", jconn.LocalAddr())
+		state := fmt.Sprintf("this is tcp_client %s, hello", jconn.LocalAddr())
 
 		msg := &interf.Message{
 			Type:    1,
@@ -72,18 +80,6 @@ func main() {
 			fmt.Printf("write failed, err: %s\n", err)
 			return
 		}
-
-		//GetConn() net.Conn
-		//Close()
-		//IsClosed() bool
-		//
-		//Write(data []byte) error
-		//AsyncWrite(data []byte) error
-		//
-		//
-		//Set(string, interface{})
-		//Get(string) interface{}
-		//Del(string)
 
 	}(conn)
 
