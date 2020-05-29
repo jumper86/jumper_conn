@@ -61,10 +61,6 @@ func main() {
 		//send hello
 		str := fmt.Sprintf("this is tcp_client %s, hello", jconn.LocalAddr())
 		//
-		//msg := &interf.Message{
-		//	Type:    1,
-		//	Content: []byte(state),
-		//}
 		type State struct {
 			Type    int64  `json:"type"`
 			Content string `json:"content"`
@@ -80,6 +76,8 @@ func main() {
 		}
 
 		sendMsg := output
+		fmt.Printf("sendMsg: %v\n", sendMsg)
+
 		//length := len(output)
 		//head := make([]byte, 4)
 		//binary.BigEndian.PutUint32(head, uint32(length))

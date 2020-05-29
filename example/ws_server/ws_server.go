@@ -79,7 +79,11 @@ func (this *Handler) Init(conn interf.Conn, ts interf.Transform) {
 func (this *Handler) OnMessage(data []byte) error {
 	defer util.TraceLog("handler.OnMessage")()
 	fmt.Printf("handler get data: %v\n", data)
-	var msg interf.Message
+	type State struct {
+		Type    int64  `json:"type"`
+		Content string `json:"content"`
+	}
+	var msg State
 	err := this.Execute(def.Backward, data, &msg)
 	if err != nil {
 		fmt.Printf("transform failed, err: %s\n", err)
