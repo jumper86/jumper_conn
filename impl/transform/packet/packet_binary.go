@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+
 	"github.com/jumper86/jumper_conn/def"
 	"github.com/jumper86/jumper_conn/interf"
 	"github.com/jumper86/jumper_conn/util"
@@ -50,7 +51,7 @@ func (*packetOpBinary) Pack(originData interface{}) ([]byte, error) {
 	defer util.TraceLog("packetOpBinary.Pack")()
 	msg, ok := originData.(*interf.Message)
 	if !ok {
-		return nil, errors.New("invalid param type, use interf.Message struct.")
+		return nil, errors.New("invalid param type, use pointer of interf.Message struct.")
 	}
 
 	rst := make([]byte, len(msg.Content)+2)
@@ -67,7 +68,7 @@ func (*packetOpBinary) Unpack(packData []byte, obj interface{}) error {
 	var msg *interf.Message
 	var ok bool
 	if msg, ok = obj.(*interf.Message); !ok {
-		return errors.New("invalid param type, use interf.Message struct.")
+		return errors.New("invalid param type, use pointer of interf.Message struct.")
 	}
 
 	msg.Type = binary.BigEndian.Uint16(packData[:2])

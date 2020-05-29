@@ -35,7 +35,7 @@ func main() {
 
 		var h Handler
 		ts := jumper_conn.Newtransform()
-		ts.AddOp(def.PacketJson, nil)
+		ts.AddOp(def.PacketBinary, nil)
 
 		wsOp := def.ConnOptions{
 			MaxMsgSize:     def.MaxMsgSize,
@@ -60,33 +60,21 @@ func main() {
 
 		//send hello
 		str := fmt.Sprintf("this is tcp_client %s, hello", jconn.LocalAddr())
-		//
-		type State struct {
-			Type    int64  `json:"type"`
-			Content string `json:"content"`
+		msg := interf.Message{
+			Type:    1,
+			Content: []byte(str),
 		}
 
-		msg := State{Type: 1, Content: str}
-
 		var output []byte
-		err = h.Execute(def.Forward, msg, &output)
+		err = h.Execute(def.Forward, &msg, &output)
 		if err != nil {
 			fmt.Printf("transform failed, err: %s\n", err)
 			return
 		}
 
-		sendMsg := output
-		fmt.Printf("sendMsg: %v\n", sendMsg)
+		fmt.Printf("sendMsg: %v\n", output)
 
-		//length := len(output)
-		//head := make([]byte, 4)
-		//binary.BigEndian.PutUint32(head, uint32(length))
-		//
-		//sendMsg := make([]byte, 0, def.TcpHeadSize+length)
-		//sendMsg = append(sendMsg, head...)
-		//sendMsg = append(sendMsg, output...)
-
-		h.Write(sendMsg)
+		h.Write(output)
 		if err != nil {
 			fmt.Printf("write failed, err: %s\n", err)
 			return

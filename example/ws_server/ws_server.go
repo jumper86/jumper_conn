@@ -51,7 +51,7 @@ func ws_connect(w http.ResponseWriter, r *http.Request) {
 
 	var h Handler
 	ts := jumper_conn.Newtransform()
-	ts.AddOp(def.PacketJson, nil)
+	ts.AddOp(def.PacketBinary, nil)
 
 	jconn, err := jumper_conn.NewwsConn(wsConn, &wsOp, &h)
 	if err != nil {
@@ -79,11 +79,9 @@ func (this *Handler) Init(conn interf.Conn, ts interf.Transform) {
 func (this *Handler) OnMessage(data []byte) error {
 	defer util.TraceLog("handler.OnMessage")()
 	fmt.Printf("handler get data: %v\n", data)
-	type State struct {
-		Type    int64  `json:"type"`
-		Content string `json:"content"`
-	}
-	var msg State
+
+	//解出结构
+	var msg interf.Message
 	err := this.Execute(def.Backward, data, &msg)
 	if err != nil {
 		fmt.Printf("transform failed, err: %s\n", err)
