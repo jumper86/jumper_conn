@@ -11,6 +11,9 @@ import (
 	"github.com/jumper86/jumper_conn/def"
 	"github.com/jumper86/jumper_conn/interf"
 	"github.com/jumper86/jumper_conn/util"
+	"github.com/jumper86/jumper_transform"
+	jtd "github.com/jumper86/jumper_transform/def"
+	jti "github.com/jumper86/jumper_transform/interf"
 )
 
 const addr = "localhost:8801"
@@ -23,6 +26,9 @@ func main() {
 		fmt.Printf("dial failed, err: %s\n", err)
 		return
 	}
+	//note: transform 可以只定义一个，他本身是线程安全对
+	ts := jumper_transform.Newtransform()
+	ts.AddOp(jtd.PacketBinary, nil)
 
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -34,8 +40,6 @@ func main() {
 		}()
 
 		var h Handler
-		ts := jumper_conn.Newtransform()
-		ts.AddOp(def.PacketBinary, nil)
 
 		wsOp := def.ConnOptions{
 			MaxMsgSize:     def.MaxMsgSize,
@@ -60,13 +64,13 @@ func main() {
 
 		//send hello
 		str := fmt.Sprintf("this is tcp_client %s, hello", jconn.LocalAddr())
-		msg := interf.Message{
+		msg := jti.Message{
 			Type:    1,
 			Content: []byte(str),
 		}
 
 		var output []byte
-		err = h.Execute(def.Forward, &msg, &output)
+		err = h.Execute(jtd.Forward, &msg, &output)
 		if err != nil {
 			fmt.Printf("transform failed, err: %s\n", err)
 			return
@@ -87,10 +91,10 @@ func main() {
 
 type Handler struct {
 	interf.Conn
-	interf.Transform
+	jti.Transform
 }
 
-func (this *Handler) Init(conn interf.Conn, ts interf.Transform) {
+func (this *Handler) Init(conn interf.Conn, ts jti.Transform) {
 	this.Conn = conn
 	this.Transform = ts
 	this.Run()

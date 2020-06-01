@@ -6,13 +6,15 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/jumper86/jumper_conn/interf"
-	"github.com/jumper86/jumper_conn/util"
+	"github.com/gorilla/websocket"
 
 	"github.com/jumper86/jumper_conn"
-
-	"github.com/gorilla/websocket"
 	"github.com/jumper86/jumper_conn/def"
+	"github.com/jumper86/jumper_conn/interf"
+	"github.com/jumper86/jumper_conn/util"
+	"github.com/jumper86/jumper_transform"
+	jtd "github.com/jumper86/jumper_transform/def"
+	jti "github.com/jumper86/jumper_transform/interf"
 )
 
 const addr = "localhost:8801"
@@ -49,9 +51,11 @@ func ws_connect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	//note: transform 可以只定义一个，他本身是线程安全对
+	ts := jumper_transform.Newtransform()
+	ts.AddOp(jtd.PacketBinary, nil)
+
 	var h Handler
-	ts := jumper_conn.Newtransform()
-	ts.AddOp(def.PacketBinary, nil)
 
 	jconn, err := jumper_conn.NewwsConn(wsConn, &wsOp, &h)
 	if err != nil {
@@ -67,10 +71,10 @@ func ws_connect(w http.ResponseWriter, r *http.Request) {
 
 type Handler struct {
 	interf.Conn
-	interf.Transform
+	jti.Transform
 }
 
-func (this *Handler) Init(conn interf.Conn, ts interf.Transform) {
+func (this *Handler) Init(conn interf.Conn, ts jti.Transform) {
 	this.Conn = conn
 	this.Transform = ts
 	this.Run()
@@ -81,8 +85,8 @@ func (this *Handler) OnMessage(data []byte) error {
 	fmt.Printf("handler get data: %v\n", data)
 
 	//解出结构
-	var msg interf.Message
-	err := this.Execute(def.Backward, data, &msg)
+	var msg jti.Message
+	err := this.Execute(jtd.Backward, data, &msg)
 	if err != nil {
 		fmt.Printf("transform failed, err: %s\n", err)
 		return err

@@ -10,6 +10,9 @@ import (
 	"github.com/jumper86/jumper_conn/def"
 	"github.com/jumper86/jumper_conn/interf"
 	"github.com/jumper86/jumper_conn/util"
+	"github.com/jumper86/jumper_transform"
+	jtd "github.com/jumper86/jumper_transform/def"
+	jti "github.com/jumper86/jumper_transform/interf"
 )
 
 const addr = "localhost:8801"
@@ -21,6 +24,10 @@ func main() {
 		return
 	}
 
+	//note: transform 可以只定义一个，他本身是线程安全对
+	ts := jumper_transform.Newtransform()
+	ts.AddOp(jtd.PacketBinary, nil)
+
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
@@ -30,8 +37,6 @@ func main() {
 
 		go func(c net.Conn) {
 			var h Handler
-			ts := jumper_conn.Newtransform()
-			ts.AddOp(def.PacketBinary, nil)
 
 			tcpOp := def.ConnOptions{
 				MaxMsgSize:     def.MaxMsgSize,
@@ -46,6 +51,7 @@ func main() {
 				fmt.Printf("new tcp conn failed. err: %s\n", err)
 				return
 			}
+
 			h.Init(jconn, ts)
 
 			fmt.Printf("local addr: %s, remote addr: %s\n", jconn.LocalAddr(), jconn.RemoteAddr())
@@ -58,10 +64,10 @@ func main() {
 
 type Handler struct {
 	interf.Conn
-	interf.Transform
+	jti.Transform
 }
 
-func (this *Handler) Init(conn interf.Conn, ts interf.Transform) {
+func (this *Handler) Init(conn interf.Conn, ts jti.Transform) {
 	this.Conn = conn
 	this.Transform = ts
 	this.Run()
@@ -70,8 +76,8 @@ func (this *Handler) Init(conn interf.Conn, ts interf.Transform) {
 func (this *Handler) OnMessage(data []byte) error {
 	defer util.TraceLog("handler.OnMessage")()
 	fmt.Printf("handler get data: %v\n", data)
-	var msg interf.Message
-	err := this.Execute(def.Backward, data, &msg)
+	var msg jti.Message
+	err := this.Execute(jtd.Backward, data, &msg)
 	if err != nil {
 		fmt.Printf("transform failed, err: %s\n", err)
 		return err
