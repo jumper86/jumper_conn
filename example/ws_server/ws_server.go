@@ -66,7 +66,7 @@ func ws_connect(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Printf("local addr: %s, remote addr: %s\n", jconn.LocalAddr(), jconn.RemoteAddr())
 
-	h.Set("radom_num", int(10000))
+	h.Set("random_num", int(10000))
 }
 
 type Handler struct {
@@ -91,10 +91,10 @@ func (this *Handler) OnMessage(data []byte) error {
 		fmt.Printf("transform failed, err: %s\n", err)
 		return err
 	}
-	num := this.Get("radom_num").(int)
+	num := this.Get("random_num").(int)
 	fmt.Printf("num: %d\n", num)
-	this.Del("radom_num")
-	if n := this.Get("radom_num"); n != nil {
+	this.Del("random_num")
+	if n := this.Get("random_num"); n != nil {
 		fmt.Printf("delete failed")
 		return errors.New("delete failed.")
 	}
