@@ -268,8 +268,8 @@ func (this *wsConn) run() {
 
 	this.setReadLimit()
 	if this.co.Side == def.ServerSide {
-		go this.sendPing()
-		this.handlePong()
+		//go this.sendPing()
+		//this.handlePong()
 	}
 
 	wg := &sync.WaitGroup{}

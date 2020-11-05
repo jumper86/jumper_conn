@@ -17,7 +17,7 @@ import (
 	jti "github.com/jumper86/jumper_transform/interf"
 )
 
-const addr = "localhost:8801"
+const addr = "localhost:8802"
 
 var upgrader = websocket.Upgrader{}
 
@@ -45,6 +45,7 @@ func ws_connect(w http.ResponseWriter, r *http.Request) {
 		CloseGracePeriod: def.CloseGracePeriod,
 	}
 
+	upgrader.CheckOrigin = func(r *http.Request) bool { return true }
 	wsConn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		fmt.Printf("err: %s\n", err)
