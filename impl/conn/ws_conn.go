@@ -220,21 +220,34 @@ func (this *wsConn) read(wg *sync.WaitGroup) error {
 
 readLoop:
 	for {
+		fmt.Println("============= 1")
 		select {
 		case <-this.closeChan:
+			fmt.Println("============= 2")
+
 			err = def.ErrConnClosed
 			break readLoop
 		default:
+			fmt.Println("============= 3")
+
 			this.setReadDeadline(this.co.ReadTimeout)
+			fmt.Println("============= 4")
+
 			_, msg, err := this.conn.ReadMessage()
+			fmt.Println("============= 5")
+
 			if err != nil {
 				if websocket.IsCloseError(err, websocket.CloseNormalClosure) {
 					err = def.ErrConnClosed
 				}
 				break readLoop
 			}
-			this.setReadDeadline(0)
+			fmt.Println("============= 6")
 
+			this.setReadDeadline(0)
+			fmt.Println("============= 7")
+
+			fmt.Printf("read msg: %v\n", msg)
 			err = this.handler.OnMessage(msg)
 			if err != nil {
 				break readLoop
