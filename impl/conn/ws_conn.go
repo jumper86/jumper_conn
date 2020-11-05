@@ -220,21 +220,16 @@ func (this *wsConn) read(wg *sync.WaitGroup) error {
 
 readLoop:
 	for {
-		fmt.Println("============= 1")
 		select {
 		case <-this.closeChan:
-			fmt.Println("============= 2")
 
 			err = def.ErrConnClosed
 			break readLoop
 		default:
-			fmt.Println("============= 3")
 
 			this.setReadDeadline(this.co.ReadTimeout)
-			fmt.Println("============= 4")
 
 			_, msg, err := this.conn.ReadMessage()
-			fmt.Println("============= 5")
 
 			if err != nil {
 				if websocket.IsCloseError(err, websocket.CloseNormalClosure) {
@@ -242,10 +237,8 @@ readLoop:
 				}
 				break readLoop
 			}
-			fmt.Println("============= 6")
 
 			this.setReadDeadline(0)
-			fmt.Println("============= 7")
 
 			fmt.Printf("read msg: %v\n", msg)
 			err = this.handler.OnMessage(msg)
@@ -268,8 +261,14 @@ func (this *wsConn) run() {
 
 	this.setReadLimit()
 	if this.co.Side == def.ServerSide {
-		//go this.sendPing()
-		//this.handlePong()
+		//note: 如下两行基于客户端接收到ping会回复pong的逻辑
+		//	在使用chrome插件 WebSocket 调试工具 发现客户端发送的消息服务端接收不到。
+		//	后来发现是 go this.sendPing() 语句导致的问题
+		//	当屏蔽该句时，就能够正常处理
+		//	推断客户端插件没有处理 Ping 系统消息
+		//	这里其实起到的就是心跳的作用，因此实际使用时若是客户端未处理Ping，那么就可以不再发送Ping，而是采用自定义的heartbeat来代替。
+		go this.sendPing()
+		this.handlePong()
 	}
 
 	wg := &sync.WaitGroup{}

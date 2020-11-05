@@ -16,7 +16,7 @@ import (
 	jti "github.com/jumper86/jumper_transform/interf"
 )
 
-const addr = "localhost:8801"
+const addr = "localhost:8802"
 
 func main() {
 
