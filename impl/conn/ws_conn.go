@@ -120,6 +120,10 @@ func (this *wsConn) setReadLimit() {
 //服务端发送ping, 接收pong
 //客户端接收ping, 发送pong, 默认底层处理已经使用回复了pong
 func (this *wsConn) sendPing() {
+	//note: 若是无需发送ping/pong 就可以设置为0
+	if this.co.PingPeriod == 0 {
+		return
+	}
 	ticker := time.NewTicker(time.Duration(this.co.PingPeriod))
 
 	for {
@@ -135,6 +139,9 @@ func (this *wsConn) sendPing() {
 }
 
 func (this *wsConn) handlePong() {
+	if this.co.PingPeriod == 0 {
+		return
+	}
 	this.conn.SetPongHandler(func(appData string) error {
 		return this.conn.SetReadDeadline(time.Now().Add(time.Duration(this.co.PongWait) * time.Second))
 	})
@@ -267,6 +274,7 @@ func (this *wsConn) run() {
 		//	当屏蔽该句时，就能够正常处理
 		//	推断客户端插件没有处理 Ping 系统消息
 		//	这里其实起到的就是心跳的作用，因此实际使用时若是客户端未处理Ping，那么就可以不再发送Ping，而是采用自定义的heartbeat来代替。
+		//  因此两个函数中添加检测 PingPeriod==0 就不开启ping/pong 逻辑
 		go this.sendPing()
 		this.handlePong()
 	}
