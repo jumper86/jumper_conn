@@ -78,7 +78,7 @@ func main() {
 
 		fmt.Printf("sendMsg: %v\n", output)
 
-		h.Write(output)
+		err = h.Write(output)
 		if err != nil {
 			fmt.Printf("write failed, err: %s\n", err)
 			return
