@@ -1,10 +1,5 @@
 package util
 
-import (
-	"fmt"
-	"time"
-)
-
 //用途：用于在函数进入时和退出时打印日志，其中包含耗时
 //用法：
 func testFunc() {
@@ -12,9 +7,9 @@ func testFunc() {
 }
 
 func TraceLog(funcName string) func() {
-	start := time.Now()
-	fmt.Printf("enter func: %s\n", funcName)
+	//start := time.Now()
+	//fmt.Printf("enter func: %s\n", funcName)
 	return func() {
-		fmt.Printf("exit func: %s, (%s)\n", funcName, time.Since(start))
+		//fmt.Printf("exit func: %s, (%s)\n", funcName, time.Since(start))
 	}
 }

@@ -247,7 +247,6 @@ readLoop:
 
 			this.setReadDeadline(0)
 
-			fmt.Printf("read msg: %v\n", msg)
 			err = this.handler.OnMessage(msg)
 			if err != nil {
 				break readLoop
